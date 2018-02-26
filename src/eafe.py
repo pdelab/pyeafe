@@ -25,19 +25,22 @@ from dolfin import *
 import numpy as np
 import sys
 
+
+def bernoulli1(r, diffusion_value):
+    eps = 1e-10
+    if (np.absolute(r) < diffusion_value * eps):
+        return diffusion_value
+    elif (r < -diffusion_value * eps):
+        return r / np.expm1(r/diffusion_value)
+    else:
+        return (r * np.exp(-r/diffusion_value)
+                / (1 - np.exp(-r/diffusion_value)))
+
+
 def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
 
     if (reac is not None):
         print "reaction terms are not yet supported"
-
-    def bernoulli1(r, diffusion_value):
-        eps = 1e-10
-        if (np.absolute(r) < diffusion_value * eps):
-            return diffusion_value
-        elif (r < -diffusion_value * eps):
-            return r / np.expm1(r/diffusion_value)
-        else:
-            return r * np.exp(-r/diffusion_value) / (1 - np.exp(-r/diffusion_value))
 
     ##################################################
     # Mesh and FEM space
@@ -47,26 +50,26 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
 
-    ################################################## 
-    # Build the stiffness matrix 
+    ##################################################
+    # Build the stiffness matrix
     ##################################################
     A = assemble(a)
     A.zero()
     dof_map = V.dofmap()
     dof_coord = V.tabulate_dof_coordinates()
 
-    for cell in cells(mesh) :
-        local_to_global_map = dof_map.cell_dofs(cell.index()) 
-        # build the local tensor 
+    for cell in cells(mesh):
+        local_to_global_map = dof_map.cell_dofs(cell.index())
+        # build the local tensor
         local_tensor = assemble_local(a, cell)
         # EAFE: change the local tensor
         # Step 1: Find the point related to dofs
-        a0 = np.array([ dof_coord[2*local_to_global_map[0]],
-                        dof_coord[2*local_to_global_map[0]+1] ])
-        a1 = np.array([ dof_coord[2*local_to_global_map[1]],
-                        dof_coord[2*local_to_global_map[1]+1] ])
-        a2 = np.array([ dof_coord[2*local_to_global_map[2]],
-                        dof_coord[2*local_to_global_map[2]+1] ])
+        a0 = np.array([dof_coord[2*local_to_global_map[0]],
+                       dof_coord[2*local_to_global_map[0]+1]])
+        a1 = np.array([dof_coord[2*local_to_global_map[1]],
+                       dof_coord[2*local_to_global_map[1]+1]])
+        a2 = np.array([dof_coord[2*local_to_global_map[2]],
+                       dof_coord[2*local_to_global_map[2]+1]])
         barycenter = (a0+a1+a2) / 3
         # Step 2: Find the convection by local constant approximation
         beta = conv(barycenter)
