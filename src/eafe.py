@@ -21,36 +21,72 @@ Usage:
 '''
 
 from __future__ import division
+from inspect import getargspec
 from dolfin import *
 import numpy as np
 
 
-def bernoulli1(r, diffusion_value):
-    eps = 1e-10
-    if (np.absolute(r) < diffusion_value * eps):
-        return diffusion_value
-    elif (r < -diffusion_value * eps):
-        return r / np.expm1(r/diffusion_value)
-    else:
-        return (r * np.exp(-r/diffusion_value)
-                / (1 - np.exp(-r/diffusion_value)))
+def create_safe_eval(fn, output_dim, strict=False, **kwargs):
+    if (fn is None and strict is True):
+        raise ValueError("Cannot safely evaluate required function")
 
-
-def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
-    quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
-    parameters["form_compiler"]["quadrature_degree"] = 2
-
-    if (reac is None):
-        def reac(vertex, cell, **kwargs):
+    elif (fn is None and output_dim == 1):
+        def returnZero(point, cell):
             return 0.0
 
-    ##################################################
-    # Mesh and FEM space
-    ##################################################
-    V = FunctionSpace(mesh, "Lagrange", 1)
+        return returnZero
+
+    elif (fn is None and output_dim > 1):
+        def returnZeros(point, cell):
+            return np.zeros(spatial_dim)
+
+        return returnZeros
+
+    signature = getargspec(fn)
+    if (len(signature.args) == 1):
+        def safe_fn(point, cell):
+            return fn(point)
+
+        return safe_fn
+
+    return fn
+
+
+def bernoulli(r):
+    if (np.absolute(r) < 1e-10):
+        return 1.0
+    elif (r < 0.0):
+        return r / np.expm1(r)
+    else:
+        return r * np.exp(-r) / (1 - np.exp(-r))
+
+
+def eafe(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+    quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
+    parameters["form_compiler"]["quadrature_degree"] = 2
     spatial_dim = mesh.topology().dim()
     cell_vertex_count = spatial_dim + 1
 
+    safe_diff = create_safe_eval(diff, 1, True)
+    safe_conv = create_safe_eval(conv, spatial_dim)
+    safe_reac = create_safe_eval(reac, 1)
+
+    def edge_harmonic(start, edge, cell):
+        midpt = start + 0.5 * edge
+        return safe_diff(midpt, cell)
+
+    def edge_psi(start, edge, cell):
+        midpt = start + 0.5 * edge
+        diffusion = safe_diff(midpt, cell)
+        convection = safe_conv(midpt, cell)
+        midpt_approx = np.inner(convection, edge)
+        return bernoulli(-midpt_approx / diffusion)
+
+    def lumped_reac(vertex, cell):
+        reaction = safe_reac(vertex, cell)
+        return reaction * cell.volume() / cell_vertex_count
+
+    V = FunctionSpace(mesh, "Lagrange", 1)
     u = TrialFunction(V)
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
@@ -76,29 +112,19 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
                 barycenter[coord] += (cell_vertex[local_dof, coord]
                                       / cell_vertex_count)
 
-        diff_val = diff(barycenter)
-        beta = conv(barycenter)
-
         for vertex_id in range(0, cell_vertex_count):
             vertex = cell_vertex[vertex_id]
-
-            try:
-                local_tensor[vertex_id, vertex_id] = reac(vertex, cell)
-            except:
-                local_tensor[vertex_id, vertex_id] = reac(barycenter)
-
-            local_tensor[vertex_id, vertex_id] *= (cell.volume()
-                                                   / cell_vertex_count)
-
+            local_tensor[vertex_id, vertex_id] = lumped_reac(vertex, cell)
             for edge_id in range(0, cell_vertex_count):
                 if (edge_id == vertex_id):
                     continue
 
-                edge = vertex - cell_vertex[edge_id]
-                eafe_weight = bernoulli1(np.inner(beta, edge), diff_val)
-                local_tensor[vertex_id, edge_id] *= eafe_weight
-                off_diagonal = local_tensor[vertex_id, edge_id]
-                local_tensor[vertex_id, vertex_id] -= off_diagonal
+                edge = cell_vertex[edge_id] - vertex
+                harmonic = edge_harmonic(vertex, edge, cell)
+                psi = edge_psi(vertex, edge, cell)
+                local_tensor[vertex_id, edge_id] *= harmonic * psi
+                local_tensor[vertex_id, vertex_id] -= \
+                    local_tensor[vertex_id, edge_id]
 
         A.add(local_tensor, local_to_global_map, local_to_global_map)
         A.apply("insert")
