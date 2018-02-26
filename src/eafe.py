@@ -38,8 +38,9 @@ def bernoulli1(r, diffusion_value):
 
 def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
 
-    if (reac is not None):
-        print "reaction terms are not yet supported"
+    if (reac is None):
+        def reac(vertex, cell, **kwargs):
+            return 0.0
 
     ##################################################
     # Mesh and FEM space
@@ -78,7 +79,14 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
 
         for vertex_id in range(0, cell_vertex_count):
             vertex = cell_vertex[vertex_id]
-            local_tensor[vertex_id][vertex_id] = 0.0
+
+            try:
+                local_tensor[vertex_id, vertex_id] = reac(vertex, cell)
+            except:
+                local_tensor[vertex_id, vertex_id] = reac(barycenter)
+
+            local_tensor[vertex_id, vertex_id] *= (cell.volume()
+                                                   / cell_vertex_count)
 
             for edge_id in range(0, cell_vertex_count):
                 if (edge_id == vertex_id):
