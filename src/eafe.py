@@ -23,7 +23,6 @@ Usage:
 from __future__ import division
 from dolfin import *
 import numpy as np
-import sys
 
 
 def bernoulli1(r, diffusion_value):
@@ -46,6 +45,9 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
     # Mesh and FEM space
     ##################################################
     V = FunctionSpace(mesh, "Lagrange", 1)
+    spatial_dim = mesh.topology().dim()
+    cell_vertex_count = spatial_dim + 1
+
     u = TrialFunction(V)
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
@@ -60,38 +62,34 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
 
     for cell in cells(mesh):
         local_to_global_map = dof_map.cell_dofs(cell.index())
-        # build the local tensor
         local_tensor = assemble_local(a, cell)
-        # EAFE: change the local tensor
-        # Step 1: Find the point related to dofs
-        a0 = np.array([dof_coord[2*local_to_global_map[0]],
-                       dof_coord[2*local_to_global_map[0]+1]])
-        a1 = np.array([dof_coord[2*local_to_global_map[1]],
-                       dof_coord[2*local_to_global_map[1]+1]])
-        a2 = np.array([dof_coord[2*local_to_global_map[2]],
-                       dof_coord[2*local_to_global_map[2]+1]])
-        barycenter = (a0+a1+a2) / 3
-        # Step 2: Find the convection by local constant approximation
-        beta = conv(barycenter)
-        # Step 3: Apply bernoulli function
+
+        barycenter = np.zeros(spatial_dim)
+        cell_vertex = np.empty([cell_vertex_count, spatial_dim])
+        for local_dof in range(0, cell_vertex_count):
+            vertex_id = spatial_dim * local_to_global_map[local_dof]
+            for coord in range(0, spatial_dim):
+                cell_vertex[local_dof, coord] = dof_coord[vertex_id + coord]
+                barycenter[coord] += (cell_vertex[local_dof, coord]
+                                      / cell_vertex_count)
+
         diff_val = diff(barycenter)
-        b01 = bernoulli1(np.inner(beta, a0-a1), diff_val)
-        b10 = bernoulli1(np.inner(beta, a1-a0), diff_val)
-        b02 = bernoulli1(np.inner(beta, a0-a2), diff_val)
-        b20 = bernoulli1(np.inner(beta, a2-a0), diff_val)
-        b12 = bernoulli1(np.inner(beta, a1-a2), diff_val)
-        b21 = bernoulli1(np.inner(beta, a2-a1), diff_val)
-        # Step 4: Change the local tensor
-        local_tensor[0][1] *= b01
-        local_tensor[1][0] *= b10
-        local_tensor[0][2] *= b02
-        local_tensor[2][0] *= b20
-        local_tensor[1][2] *= b12
-        local_tensor[2][1] *= b21
-        local_tensor[0][0] = -local_tensor[1][0] - local_tensor[2][0]
-        local_tensor[1][1] = -local_tensor[0][1] - local_tensor[2][1]
-        local_tensor[2][2] = -local_tensor[0][2] - local_tensor[1][2]
-        # Build the stiffness matrix
+        beta = conv(barycenter)
+
+        for vertex_id in range(0, cell_vertex_count):
+            vertex = cell_vertex[vertex_id]
+            local_tensor[vertex_id][vertex_id] = 0.0
+
+            for edge_id in range(0, cell_vertex_count):
+                if (edge_id == vertex_id):
+                    continue
+
+                edge = vertex - cell_vertex[edge_id]
+                eafe_weight = bernoulli1(np.inner(beta, edge), diff_val)
+                local_tensor[vertex_id, edge_id] *= eafe_weight
+                off_diagonal = local_tensor[vertex_id, edge_id]
+                local_tensor[vertex_id, vertex_id] -= off_diagonal
+
         A.add(local_tensor, local_to_global_map, local_to_global_map)
         A.apply("insert")
 
