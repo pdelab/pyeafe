@@ -37,6 +37,8 @@ def bernoulli1(r, diffusion_value):
 
 
 def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
+    quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
+    parameters["form_compiler"]["quadrature_degree"] = 2
 
     if (reac is None):
         def reac(vertex, cell, **kwargs):
@@ -105,4 +107,5 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
         bc = DirichletBC(V, 0.0, boundary)
         bc.apply(A)
 
+    parameters["form_compiler"]["quadrature_degree"] = quadrature_degree
     return A
