@@ -21,74 +21,111 @@ Usage:
 '''
 
 from __future__ import division
+from inspect import getargspec
 from dolfin import *
 import numpy as np
-import sys
 
-def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
 
-    if (reac is not None):
-        print "reaction terms are not yet supported"
+def create_safe_eval(fn, output_dim, strict=False, **kwargs):
+    if (fn is None and strict is True):
+        raise ValueError("Cannot safely evaluate required function")
 
-    def bernoulli1(r, diffusion_value):
-        eps = 1e-10
-        if (np.absolute(r) < diffusion_value * eps):
-            return diffusion_value
-        elif (r < -diffusion_value * eps):
-            return r / np.expm1(r/diffusion_value)
-        else:
-            return r * np.exp(-r/diffusion_value) / (1 - np.exp(-r/diffusion_value))
+    elif (fn is None and output_dim == 1):
+        def returnZero(point, cell):
+            return 0.0
 
-    ##################################################
-    # Mesh and FEM space
-    ##################################################
+        return returnZero
+
+    elif (fn is None and output_dim > 1):
+        def returnZeros(point, cell):
+            return np.zeros(spatial_dim)
+
+        return returnZeros
+
+    signature = getargspec(fn)
+    if (len(signature.args) == 1):
+        def safe_fn(point, cell):
+            return fn(point)
+
+        return safe_fn
+
+    return fn
+
+
+def bernoulli(r):
+    if (np.absolute(r) < 1e-10):
+        return 1.0
+    elif (r < 0.0):
+        return r / np.expm1(r)
+    else:
+        return r * np.exp(-r) / (1 - np.exp(-r))
+
+
+def eafe(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+    quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
+    parameters["form_compiler"]["quadrature_degree"] = 2
+    spatial_dim = mesh.topology().dim()
+    cell_vertex_count = spatial_dim + 1
+
+    safe_diff = create_safe_eval(diff, 1, True)
+    safe_conv = create_safe_eval(conv, spatial_dim)
+    safe_reac = create_safe_eval(reac, 1)
+
+    def edge_harmonic(start, edge, cell):
+        midpt = start + 0.5 * edge
+        return safe_diff(midpt, cell)
+
+    def edge_psi(start, edge, cell):
+        midpt = start + 0.5 * edge
+        diffusion = safe_diff(midpt, cell)
+        convection = safe_conv(midpt, cell)
+        midpt_approx = np.inner(convection, edge)
+        return bernoulli(-midpt_approx / diffusion)
+
+    def lumped_reac(vertex, cell):
+        reaction = safe_reac(vertex, cell)
+        return reaction * cell.volume() / cell_vertex_count
+
     V = FunctionSpace(mesh, "Lagrange", 1)
     u = TrialFunction(V)
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
 
-    ################################################## 
-    # Build the stiffness matrix 
+    ##################################################
+    # Build the stiffness matrix
     ##################################################
     A = assemble(a)
     A.zero()
     dof_map = V.dofmap()
     dof_coord = V.tabulate_dof_coordinates()
 
-    for cell in cells(mesh) :
-        local_to_global_map = dof_map.cell_dofs(cell.index()) 
-        # build the local tensor 
+    for cell in cells(mesh):
+        local_to_global_map = dof_map.cell_dofs(cell.index())
         local_tensor = assemble_local(a, cell)
-        # EAFE: change the local tensor
-        # Step 1: Find the point related to dofs
-        a0 = np.array([ dof_coord[2*local_to_global_map[0]],
-                        dof_coord[2*local_to_global_map[0]+1] ])
-        a1 = np.array([ dof_coord[2*local_to_global_map[1]],
-                        dof_coord[2*local_to_global_map[1]+1] ])
-        a2 = np.array([ dof_coord[2*local_to_global_map[2]],
-                        dof_coord[2*local_to_global_map[2]+1] ])
-        barycenter = (a0+a1+a2) / 3
-        # Step 2: Find the convection by local constant approximation
-        beta = conv(barycenter)
-        # Step 3: Apply bernoulli function
-        diff_val = diff(barycenter)
-        b01 = bernoulli1(np.inner(beta, a0-a1), diff_val)
-        b10 = bernoulli1(np.inner(beta, a1-a0), diff_val)
-        b02 = bernoulli1(np.inner(beta, a0-a2), diff_val)
-        b20 = bernoulli1(np.inner(beta, a2-a0), diff_val)
-        b12 = bernoulli1(np.inner(beta, a1-a2), diff_val)
-        b21 = bernoulli1(np.inner(beta, a2-a1), diff_val)
-        # Step 4: Change the local tensor
-        local_tensor[0][1] *= b01
-        local_tensor[1][0] *= b10
-        local_tensor[0][2] *= b02
-        local_tensor[2][0] *= b20
-        local_tensor[1][2] *= b12
-        local_tensor[2][1] *= b21
-        local_tensor[0][0] = -local_tensor[1][0] - local_tensor[2][0]
-        local_tensor[1][1] = -local_tensor[0][1] - local_tensor[2][1]
-        local_tensor[2][2] = -local_tensor[0][2] - local_tensor[1][2]
-        # Build the stiffness matrix
+
+        barycenter = np.zeros(spatial_dim)
+        cell_vertex = np.empty([cell_vertex_count, spatial_dim])
+        for local_dof in range(0, cell_vertex_count):
+            vertex_id = spatial_dim * local_to_global_map[local_dof]
+            for coord in range(0, spatial_dim):
+                cell_vertex[local_dof, coord] = dof_coord[vertex_id + coord]
+                barycenter[coord] += (cell_vertex[local_dof, coord]
+                                      / cell_vertex_count)
+
+        for vertex_id in range(0, cell_vertex_count):
+            vertex = cell_vertex[vertex_id]
+            local_tensor[vertex_id, vertex_id] = lumped_reac(vertex, cell)
+            for edge_id in range(0, cell_vertex_count):
+                if (edge_id == vertex_id):
+                    continue
+
+                edge = cell_vertex[edge_id] - vertex
+                harmonic = edge_harmonic(vertex, edge, cell)
+                psi = edge_psi(vertex, edge, cell)
+                local_tensor[vertex_id, edge_id] *= harmonic * psi
+                local_tensor[vertex_id, vertex_id] -= \
+                    local_tensor[vertex_id, edge_id]
+
         A.add(local_tensor, local_to_global_map, local_to_global_map)
         A.apply("insert")
 
@@ -96,4 +133,5 @@ def eafe(mesh, diff, conv, reac=None, boundary=None, **kwargs):
         bc = DirichletBC(V, 0.0, boundary)
         bc.apply(A)
 
+    parameters["form_compiler"]["quadrature_degree"] = quadrature_degree
     return A
