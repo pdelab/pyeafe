@@ -15,5 +15,5 @@ setup(name='pyeafe',
       author='Maximilian Metti, Shuonan Wu, Arthur Bousquet',
       author_email='',
       license='GNU Lesser General Public License',
-      packages=['pyeafe'],
+      packages=['pyeafe','pyeafe.tests'],
       zip_safe=False)

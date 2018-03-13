@@ -3,19 +3,22 @@ from dolfin import *
 import numpy as np
 import pyeafe
 
+
 def run():
 
     def boundary(x, on_boundary):
         return on_boundary
 
     diffusivity = 1.0E-2
+
     def diffusion_expression(x):
         return diffusivity
 
     def convection_expression(x):
-        return np.array([x[1],-x[0]])
+        return np.array([x[1], -x[0]])
 
     reaction = 3.0
+
     def reaction_expression(x):
         return reaction
 
@@ -72,6 +75,7 @@ def run():
     print "L2 error = ", errornorm(exact_solution, solution, 'l2', 3)
     print "H1 error = ", errornorm(exact_solution, solution, 'H1', 3)
     print "Success!"
+
 
 if __name__ == "__main__":
     run()

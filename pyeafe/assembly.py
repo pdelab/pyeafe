@@ -26,6 +26,8 @@ from dolfin import *
 import numpy as np
 import logging
 
+__all__ = ['eafe_assemble']
+
 
 def create_safe_eval(fn, output_dim, strict=False, **kwargs):
     if (fn is None and strict is True):

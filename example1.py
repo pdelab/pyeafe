@@ -10,12 +10,17 @@ import pyeafe
 def boundary(x, on_boundary):
     return on_boundary
 
+
 diffusivity = 1.0E-2
+
+
 def diffusion_expression(x):
     return diffusivity
 
+
 def convection_expression(x):
-    return np.array([x[1],-x[0]])
+    return np.array([x[1], -x[0]])
+
 
 right_side_expression = Expression(
     "8 * DOLFIN_PI * DOLFIN_PI * diffusivity\
@@ -35,7 +40,8 @@ continuous_pw_linear_space = FunctionSpace(mesh, "Lagrange", 1)
 test_function = TestFunction(continuous_pw_linear_space)
 linear_functional = right_side_expression * test_function * dx
 
-stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion_expression, convection_expression)
+stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion_expression,
+                                        convection_expression)
 rhs_vector = assemble(linear_functional)
 
 exact_solution = Expression(

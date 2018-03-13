@@ -3,17 +3,19 @@ from dolfin import *
 import numpy as np
 import pyeafe
 
+
 def run():
 
     def boundary(x, on_boundary):
         return on_boundary
 
     diffusivity = 1.0E-2
+
     def diffusion_expression(x):
         return diffusivity
 
     def convection_expression(x):
-        return np.array([x[1],-x[0]])
+        return np.array([x[1], -x[0]])
 
     right_side_expression = Expression(
         "8 * DOLFIN_PI * DOLFIN_PI * diffusivity\
@@ -33,7 +35,8 @@ def run():
     test_function = TestFunction(continuous_pw_linear_space)
     linear_functional = right_side_expression * test_function * dx
 
-    stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion_expression, convection_expression)
+    stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion_expression,
+                                            convection_expression)
     rhs_vector = assemble(linear_functional)
 
     exact_solution = Expression(
@@ -59,6 +62,7 @@ def run():
     print "L2 error = ", errornorm(exact_solution, solution, 'l2', 3)
     print "H1 error = ", errornorm(exact_solution, solution, 'H1', 3)
     print "Success!"
+
 
 if __name__ == "__main__":
     run()
