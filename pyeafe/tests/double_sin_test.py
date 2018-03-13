@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 from dolfin import *
 import numpy as np
 import inspect

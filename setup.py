@@ -14,6 +14,6 @@ setup(name='pyeafe',
       url='https://github.com/thepnpsolver/pyeafe',
       author='Maximilian Metti, Shuonan Wu, Arthur Bousquet',
       author_email='',
-      license='GNU General Public License v3.0',
+      license='GNU Lesser General Public License',
       packages=['pyeafe'],
       zip_safe=False)

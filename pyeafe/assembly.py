@@ -24,6 +24,7 @@ from __future__ import division
 from inspect import getargspec
 from dolfin import *
 import numpy as np
+import logging
 
 
 def create_safe_eval(fn, output_dim, strict=False, **kwargs):
@@ -62,6 +63,7 @@ def bernoulli(r):
 
 
 def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+    logging.getLogger('FFC').setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
     spatial_dim = mesh.topology().dim()

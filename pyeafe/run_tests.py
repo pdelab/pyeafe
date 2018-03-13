@@ -1,17 +1,16 @@
+#! /usr/bin/env python
 '''
-Test module
+Tests wrapping module
 '''
 
-from __future__ import division
 from dolfin import *
 import numpy as np
-# import tests as tst
 from tests import double_sin_3d_test, \
                   double_sin_reaction_test, \
                   double_sin_test
 
 
-def run():
+def run_tests():
     print "Begining the tests:"
     print "Testing over sin..."
     double_sin_test.run()
