@@ -1,4 +1,12 @@
+import sys
 from setuptools import setup
+
+try:
+    import dolfin
+except ImportError:
+    print"PyEAFE requires dolfin to be installed,"
+    print "please install dolfin before installing PyEAFE."
+    sys.exit()
 
 setup(name='pyeafe',
       version='0.1',
