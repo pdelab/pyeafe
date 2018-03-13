@@ -8,7 +8,7 @@ convection diffusion reaction equation:
 Integral quantities are approximated by quadrature.
 
 Usage:
-    eafe(mesh, diff, conv, reac, boundary)
+    eafe_assemble(mesh, diff, conv, reac, boundary)
 
     - mesh: mesh defining finite element space
     - diff: DOLFIN expression for diffusion
@@ -24,6 +24,9 @@ from __future__ import division
 from inspect import getargspec
 from dolfin import *
 import numpy as np
+import logging
+
+__all__ = ['eafe_assemble']
 
 
 def create_safe_eval(fn, output_dim, strict=False, **kwargs):
@@ -61,7 +64,8 @@ def bernoulli(r):
         return r * np.exp(-r) / (1 - np.exp(-r))
 
 
-def eafe(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+    logging.getLogger('FFC').setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
     spatial_dim = mesh.topology().dim()

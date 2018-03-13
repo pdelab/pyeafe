@@ -1,25 +1,26 @@
+#! /usr/bin/env python
 from dolfin import *
 import numpy as np
 import inspect
 import sys
 import os
-
-current_frame = inspect.getfile(inspect.currentframe())
-current_dir = os.path.dirname(os.path.abspath(current_frame))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir + "/src")
-import eafe
+import pyeafe
 
 
 def boundary(x, on_boundary):
     return on_boundary
 
+
 diffusivity = 1.0E-2
+
+
 def diffusion_expression(x):
     return diffusivity
 
+
 def convection_expression(x):
-    return np.array([x[1],-x[0]])
+    return np.array([x[1], -x[0]])
+
 
 right_side_expression = Expression(
     "8 * DOLFIN_PI * DOLFIN_PI * diffusivity\
@@ -39,7 +40,8 @@ continuous_pw_linear_space = FunctionSpace(mesh, "Lagrange", 1)
 test_function = TestFunction(continuous_pw_linear_space)
 linear_functional = right_side_expression * test_function * dx
 
-stiffness_matrix = eafe.eafe(mesh, diffusion_expression, convection_expression)
+stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion_expression,
+                                        convection_expression)
 rhs_vector = assemble(linear_functional)
 
 exact_solution = Expression(
@@ -53,9 +55,6 @@ solution = Function(continuous_pw_linear_space)
 solver = LUSolver(stiffness_matrix, "default")
 solver.parameters["symmetric"] = False
 solver.solve(solution.vector(), rhs_vector)
-
-solution_output = File("output/eafe.pvd")
-solution_output << solution
 
 if (errornorm(exact_solution, solution, 'l2', 3) > 2.12E-1):
     print "L2 error increased! Solver failed"
