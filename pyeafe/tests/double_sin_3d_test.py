@@ -1,15 +1,7 @@
 #! /usr/bin/env python
 from dolfin import *
 import numpy as np
-import inspect
-import sys
-import os
-
-current_frame = inspect.getfile(inspect.currentframe())
-current_dir = os.path.dirname(os.path.abspath(current_frame))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
-import assembly as eafe
+import pyeafe
 
 def run():
 
@@ -46,7 +38,7 @@ def run():
     test_function = TestFunction(continuous_pw_linear_space)
     linear_functional = right_side_expression * test_function * dx
 
-    stiffness_matrix = eafe.eafe_assemble(mesh, diffusion_expression, convection_expression)
+    stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion_expression, convection_expression)
     rhs_vector = assemble(linear_functional)
 
     bc = DirichletBC(continuous_pw_linear_space, exact_solution, boundary)
