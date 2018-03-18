@@ -21,38 +21,13 @@ Usage:
 '''
 
 from __future__ import division
-from inspect import getargspec
 from dolfin import *
 import numpy as np
 import logging
 
+from evaluate import create_safe_eval
+
 __all__ = ['eafe_assemble']
-
-
-def create_safe_eval(fn, output_dim, strict=False, **kwargs):
-    if (fn is None and strict is True):
-        raise ValueError("Cannot safely evaluate required function")
-
-    elif (fn is None and output_dim == 1):
-        def returnZero(point, cell):
-            return 0.0
-
-        return returnZero
-
-    elif (fn is None and output_dim > 1):
-        def returnZeros(point, cell):
-            return np.zeros(spatial_dim)
-
-        return returnZeros
-
-    signature = getargspec(fn)
-    if (len(signature.args) == 1):
-        def safe_fn(point, cell):
-            return fn(point)
-
-        return safe_fn
-
-    return fn
 
 
 def bernoulli(r):
@@ -107,14 +82,11 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
         local_to_global_map = dof_map.cell_dofs(cell.index())
         local_tensor = assemble_local(a, cell)
 
-        barycenter = np.zeros(spatial_dim)
         cell_vertex = np.empty([cell_vertex_count, spatial_dim])
         for local_dof in range(0, cell_vertex_count):
-            vertex_id = spatial_dim * local_to_global_map[local_dof]
+            dof_id = spatial_dim * local_to_global_map[local_dof]
             for coord in range(0, spatial_dim):
-                cell_vertex[local_dof, coord] = dof_coord[vertex_id + coord]
-                barycenter[coord] += (cell_vertex[local_dof, coord]
-                                      / cell_vertex_count)
+                cell_vertex[local_dof, coord] = dof_coord[dof_id + coord]
 
         for vertex_id in range(0, cell_vertex_count):
             vertex = cell_vertex[vertex_id]
