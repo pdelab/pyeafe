@@ -27,7 +27,7 @@ import logging
 
 from evaluate import create_safe_eval
 
-__all__ = ['eafe_assemble']
+__all__ = ["eafe_assemble"]
 
 
 def bernoulli(r):
@@ -69,10 +69,6 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
     u = TrialFunction(V)
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
-
-    ##################################################
-    # Build the stiffness matrix
-    ##################################################
     A = assemble(a)
     A.zero()
     dof_map = V.dofmap()
