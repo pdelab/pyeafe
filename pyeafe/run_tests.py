@@ -8,10 +8,11 @@ from dolfin import *
 import numpy as np
 from tests import double_sin_3d_test, \
                   double_sin_reaction_test, \
-                  double_sin_test
+                  double_sin_test, \
+                  evaluation_test
 
 
-__all__ = ['run_tests']
+__all__ = ["run_tests"]
 
 
 def run_tests():
@@ -22,6 +23,8 @@ def run_tests():
     double_sin_reaction_test.run()
     print "Testing over sin 3D..."
     double_sin_3d_test.run()
+    print "Testing variously defined coefficients..."
+    evaluation_test.run()
     print "Done."
 
 
