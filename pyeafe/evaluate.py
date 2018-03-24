@@ -69,11 +69,17 @@ def create_safe_eval(expression=None, value_shape=None,
 
         return evaluate
 
-    signature = getargspec(expression)
-    if len(signature.args) is 1:
-        def eval_with_cell_stub(point, cell):
-            return expression(point)
+    if callable(expression):
+        signature = getargspec(expression)
+        if len(signature.args) is 1:
+            def eval_with_cell_stub(point, cell):
+                return expression(point)
 
-        return eval_with_cell_stub
+            return eval_with_cell_stub
 
-    return expression
+        return expression
+
+    def return_value(point, cell):
+        return expression
+
+    return return_value

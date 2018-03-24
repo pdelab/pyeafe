@@ -8,12 +8,12 @@ def boundary(x, on_boundary):
     return on_boundary
 
 
-exact_solution = Expression(
+true_solution = Expression(
     "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])",
     degree=4
 )
 diffusivity = 1.0E-2
-right_side_expression = Expression(
+rhs = Expression(
     "8 * DOLFIN_PI * DOLFIN_PI * diffusivity\
     * sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])\
     - 2 * DOLFIN_PI * x[1] * cos(2 * DOLFIN_PI * x[0])\
@@ -25,7 +25,10 @@ right_side_expression = Expression(
 )
 
 
-def compute_error(stiffness_matrix, mesh):
+def compute_error(stiffness_matrix, mesh,
+                  right_side_expression=rhs,
+                  exact_solution=true_solution,
+                  **kwargs):
     continuous_pw_linear_space = FunctionSpace(mesh, "CG", 1)
     test_function = TestFunction(continuous_pw_linear_space)
     linear_functional = right_side_expression * test_function * dx
@@ -94,6 +97,16 @@ def run():
         compute_error(eafe_function, mesh)
     except error:
         print("error when executing with python defined coefficients")
+        print(error)
+        exit(1)
+
+    eafe_constant = pyeafe.eafe_assemble(mesh, diffusivity, np.zeros(2))
+    try:
+        diff_expr = Expression("diff", degree=2, diff=diffusivity)
+        zero_expr = Expression("zero", degree=2, zero=0.0)
+        err = compute_error(eafe_constant, mesh, diff_expr, zero_expr)
+    except error:
+        print("error when executing with constant coefficients")
         print(error)
         exit(1)
 
