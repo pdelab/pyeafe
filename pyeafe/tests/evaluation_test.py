@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 from dolfin import *
 import numpy as np
+import logging
 import pyeafe
 
 
@@ -52,6 +53,8 @@ def compute_error(stiffness_matrix, mesh,
 
 
 def run():
+    logging.getLogger('FFC').setLevel(logging.WARNING)
+
     granularity = 8
     mesh = UnitSquareMesh(granularity, granularity)
 
