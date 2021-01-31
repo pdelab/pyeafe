@@ -3,12 +3,17 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - appdirs=1.4.4=pyh9f0ad1d_0
+  - attrs=20.3.0=pyhd3eb1b0_0
   - boost-cpp=1.74.0=h43a636a_2
   - bzip2=1.0.8=hc929b4f_4
   - c-ares=1.17.1=hc929b4f_0
   - ca-certificates=2021.1.19=hecd8cb5_0
   - certifi=2020.12.5=py38hecd8cb5_0
+  - cfgv=3.2.0=py_0
   - cmake=3.19.4=hdeeeba1_0
+  - distlib=0.3.1=pyh9f0ad1d_0
+  - editdistance=0.5.3=py38h0a5c65b_3
   - eigen=3.3.9=h926bf3e_1
   - expat=2.2.10=h1c7c35f_0
   - fenics=2019.1.0=py38h50d1736_18
@@ -18,11 +23,14 @@ dependencies:
   - fenics-fiat=2019.1.0=py38h50d1736_18
   - fenics-libdolfin=2019.1.0=h01d35b8_18
   - fenics-ufl=2019.1.0=py38h50d1736_18
+  - filelock=3.0.12=pyh9f0ad1d_0
   - gmp=6.2.1=h2e338ed_0
   - gmpy2=2.1.0b1=py38haf64e2c_1
   - hdf5=1.10.6=mpi_mpich_h8c5dddf_1013
   - hypre=2.18.2=hc9ba2bc_1
   - icu=68.1=h74dc148_0
+  - identify=1.5.13=pyh44b312d_0
+  - iniconfig=1.1.1=pyhd3eb1b0_0
   - krb5=1.17.2=h60d9502_0
   - libblas=3.9.0=7_openblas
   - libcblas=3.9.0=7_openblas
@@ -42,6 +50,7 @@ dependencies:
   - llvm-openmp=11.0.1=h7c73e74_0
   - lz4-c=1.9.3=h046ec9c_0
   - metis=5.1.0=h2e338ed_1006
+  - more-itertools=8.6.0=pyhd3eb1b0_0
   - mpc=1.1.0=ha57cd0f_1009
   - mpfr=4.0.2=h72d8aaf_1
   - mpi=1.0=mpich
@@ -51,18 +60,27 @@ dependencies:
   - mumps-include=5.2.1=h694c41f_10
   - mumps-mpi=5.2.1=hdbd7e29_10
   - ncurses=6.2=h2e338ed_4
+  - nodeenv=1.5.0=pyh9f0ad1d_0
   - numpy=1.20.0=py38h64deac9_0
   - openssl=1.1.1i=h9ed2024_0
+  - packaging=20.9=pyhd3eb1b0_0
   - parmetis=4.0.3=hbc1d92b_1005
   - petsc=3.13.6=h2988a7a_1
   - petsc4py=3.13.0=py38hf295f9f_5
   - pip=21.0.1=pyhd8ed1ab_0
   - pkg-config=0.29.2=h31203cd_1008
   - pkgconfig=1.4.0=py38h50d1736_3
+  - pluggy=0.13.1=py38_0
+  - pre-commit=2.10.0=py38h50d1736_0
+  - pre_commit=2.10.0=hd8ed1ab_0
   - ptscotch=6.0.9=h682e2fc_1
+  - py=1.10.0=pyhd3eb1b0_0
   - pybind11=2.6.1=py38h9250c2b_0
+  - pyparsing=2.4.7=pyhd3eb1b0_0
+  - pytest=6.2.2=py38hecd8cb5_2
   - python=3.8.5=h26836e1_1
   - python_abi=3.8=1_cp38
+  - pyyaml=5.4.1=py38h5406a74_0
   - readline=8.0=h0678c8f_2
   - rhash=1.4.1=h35c211d_0
   - scalapack=2.0.2=h3774d7d_1009
@@ -78,8 +96,11 @@ dependencies:
   - sympy=1.7.1=py38h50d1736_1
   - tbb=2020.2=h926bf3e_3
   - tk=8.6.10=h0419947_1
+  - toml=0.10.2=pyhd8ed1ab_0
+  - virtualenv=20.4.1=py38h50d1736_0
   - wheel=0.36.2=pyhd3deb0d_0
   - xz=5.2.5=haf1e3a3_1
+  - yaml=0.2.5=haf1e3a3_0
   - zlib=1.2.11=h7795811_1010
   - zstd=1.4.8=hf387650_1
   - pip:

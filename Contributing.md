@@ -10,14 +10,15 @@ To create and activate the virtual environment, run:
   conda activate pyeafe
 ```
 To exit the virtual environment,
-run `exit` and the `(pyeafe)` prefix should no longer be visible in the command prompt.
+run `conda deactivate` and the `(pyeafe)` prefix should no longer be visible in the command prompt.
 
 
 ## Updating the virtual environment
 When packages are updated, run:
 ```
-  conda env update --file environment
+  conda env update --file environment.yml
 ```
+to get the latest environment installed.
 If new dependencies are added to the virtual environment,
 they must be tracked in the `environment.yml` file.
 Writing the list of dependencies to this file should be done by
@@ -38,3 +39,8 @@ To run the tests, run `python -m unittest discover` at the top-level directory.
 
 All tests are required to pass before each commit.
 This is automatically verified by use of pre-commit hooks.
+
+
+## Uninstalling
+To uninstall, simply remove the `pyeafe` virtual environment with
+`conda env remove -n pyeafe`.
