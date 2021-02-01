@@ -8,6 +8,6 @@ setup(
     author="Maximilian Metti, Shuonan Wu, Arthur Bousquet",
     author_email="pyeafe.team@gmail.com",
     license="GNU Lesser General Public License",
-    packages=["pyeafe", "pyeafe.tests"],
+    packages=["pyeafe"],
     zip_safe=False,
 )

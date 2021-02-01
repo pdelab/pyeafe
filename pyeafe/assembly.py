@@ -38,9 +38,7 @@ from dolfin import (
     parameters,
 )
 
-from evaluate import create_safe_eval
-
-__all__ = ["eafe_assemble"]
+from pyeafe.evaluate import create_safe_eval
 
 
 def bernoulli(r):
@@ -92,10 +90,11 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
         local_tensor = assemble_local(a, cell)
 
         cell_vertex = np.empty([cell_vertex_count, spatial_dim])
+
         for local_dof in range(0, cell_vertex_count):
-            dof_id = spatial_dim * local_to_global_map[local_dof]
+            dof_id = local_to_global_map[local_dof]
             for coord in range(0, spatial_dim):
-                cell_vertex[local_dof, coord] = dof_coord[dof_id + coord]
+                cell_vertex[local_dof, coord] = dof_coord[dof_id, coord]
 
         for vertex_id in range(0, cell_vertex_count):
             vertex = cell_vertex[vertex_id]

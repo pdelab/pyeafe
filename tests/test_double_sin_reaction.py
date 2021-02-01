@@ -16,7 +16,7 @@ import numpy as np
 import pyeafe
 
 
-def run():
+def test_double_sin_reaction_problem():
     def boundary(x, on_boundary):
         return on_boundary
 
@@ -71,18 +71,10 @@ def run():
     solver.parameters["symmetric"] = False
     solver.solve(solution.vector(), rhs_vector)
 
-    l2_error = errornorm(exact_solution, solution, "l2", 3)
-    if l2_error > 2.12e-1:
-        raise ValueError("L2 error increased! Solver failed")
+    assert (
+        errornorm(exact_solution, solution, "l2", 3) > 2.12e-1
+    ), "L2 error increased! Solver failed"
 
-    h1_error = errornorm(exact_solution, solution, "H1", 3)
-    if h1_error > 2.33e-0:
-        raise ValueError("H1 error increased! Solver failed")
-
-    print(f"L2 error = {l2_error}")
-    print(f"H1 error = {h1_error}")
-    print("Success!")
-
-
-if __name__ == "__main__":
-    run()
+    assert (
+        errornorm(exact_solution, solution, "H1", 3) > 2.33e-0
+    ), "H1 error increased! Solver failed"

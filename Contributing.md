@@ -35,10 +35,10 @@ run:
 
 ## Testing
 A suite of unit and functional tests verify the functionality of the repo.
-To run the tests, run `python -m unittest discover` at the top-level directory.
+To run the tests, run `pytest` at the top-level directory.
 
-All tests are required to pass before each commit.
-This is automatically verified by use of pre-commit hooks.
+Ensure that all tests pass before pushing to remote.
+Failing tests prevent pull requests from being reviewed and merged.
 
 
 ## Uninstalling

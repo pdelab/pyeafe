@@ -1,8 +1,6 @@
 from inspect import getargspec
 import numpy as np
 
-__all__ = ["create_safe_eval"]
-
 
 def returnZeroOutput(dimension):
     if dimension < 1:

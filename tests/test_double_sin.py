@@ -6,7 +6,7 @@ from dolfin import (
     FunctionSpace,
     LUSolver,
     TestFunction,
-    UnitCubeMesh,
+    UnitSquareMesh,
     assemble,
     dx,
     errornorm,
@@ -16,22 +16,19 @@ import numpy as np
 import pyeafe
 
 
-def run():
-    def boundary(x, on_boundary):
-        return on_boundary
+def boundary(x, on_boundary):
+    return on_boundary
 
-    diffusivity = 1.0e-2
 
-    def diffusion_expression(x):
-        return diffusivity
+def diffusion_expression(x):
+    return 1.0e-2
 
-    def convection_expression(x):
-        return np.array([x[1], -x[0], 0.0])
 
-    exact_solution = Expression(
-        "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])", degree=4
-    )
+def convection_expression(x):
+    return np.array([x[1], -x[0]])
 
+
+def test_double_sin_problem():
     right_side_expression = Expression(
         "8 * DOLFIN_PI * DOLFIN_PI * diffusivity\
         * sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])\
@@ -40,11 +37,11 @@ def run():
         - 2 * DOLFIN_PI * x[0] * sin(2 * DOLFIN_PI * x[0])\
         * sin(2 * DOLFIN_PI * x[1])",
         degree=2,
-        diffusivity=diffusivity,
+        diffusivity=1.0e-2,
     )
 
     granularity = 8
-    mesh = UnitCubeMesh(granularity, granularity, granularity)
+    mesh = UnitSquareMesh(granularity, granularity)
 
     continuous_pw_linear_space = FunctionSpace(mesh, "Lagrange", 1)
     test_function = TestFunction(continuous_pw_linear_space)
@@ -55,6 +52,9 @@ def run():
     )
     rhs_vector = assemble(linear_functional)
 
+    exact_solution = Expression(
+        "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])", degree=4
+    )
     bc = DirichletBC(continuous_pw_linear_space, exact_solution, boundary)
     bc.apply(stiffness_matrix, rhs_vector)
 
@@ -63,18 +63,10 @@ def run():
     solver.parameters["symmetric"] = False
     solver.solve(solution.vector(), rhs_vector)
 
-    l2_error = errornorm(exact_solution, solution, "l2", 3)
-    if l2_error > 2.12e-1:
-        raise ValueError("L2 error increased! Solver failed")
+    assert (
+        errornorm(exact_solution, solution, "l2", 3) > 2.12e-1
+    ), "L2 error increased! Solver failed"
 
-    h1_error = errornorm(exact_solution, solution, "H1", 3)
-    if h1_error > 2.33e-0:
-        raise ValueError("H1 error increased! Solver failed")
-
-    print(f"L2 error = {l2_error}")
-    print(f"H1 error = {h1_error}")
-    print("Success!")
-
-
-if __name__ == "__main__":
-    run()
+    assert (
+        errornorm(exact_solution, solution, "H1", 3) > 2.33e-0
+    ), "H1 error increased! Solver failed"

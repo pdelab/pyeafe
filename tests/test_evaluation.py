@@ -67,7 +67,7 @@ def compute_error(
         raise ValueError("H1-error is larger than expected: " + h1_error)
 
 
-def run():
+def test_evaluate():
     logging.getLogger("FFC").setLevel(logging.WARNING)
 
     granularity = 8
@@ -125,7 +125,3 @@ def run():
 
     print("Errors for various PDE coefficient representations are acceptable")
     print("Success!")
-
-
-if __name__ == "__main__":
-    run()
