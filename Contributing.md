@@ -33,6 +33,14 @@ run:
 ```
 
 
+## Code Styling
+Code smells and linting automatically takes place in the pre-commit hook;
+however, these operations can always be executed manually with:
+```
+  flake8 && black .
+```
+
+
 ## Testing
 A suite of unit and functional tests verify the functionality of the repo.
 To run the tests, run `pytest` at the top-level directory.
