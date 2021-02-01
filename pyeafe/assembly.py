@@ -1,4 +1,4 @@
-'''
+"""
 Assembly of stiffness matrix for a generic
 convection diffusion reaction equation:
   diff in L1, conv in [L1]^d, reac in L_infty,
@@ -18,12 +18,25 @@ Usage:
         coordinate and on_boundary boolean to determine
         whether coordinate is on a Dirichlet boundary
         (boundary condition is assumed to be zero)
-'''
+"""
 
 from __future__ import division
-from dolfin import *
 import numpy as np
 import logging
+
+from dolfin import (
+    DirichletBC,
+    FunctionSpace,
+    TestFunction,
+    TrialFunction,
+    assemble,
+    assemble_local,
+    cells,
+    dx,
+    grad,
+    inner,
+    parameters,
+)
 
 from evaluate import create_safe_eval
 
@@ -31,16 +44,16 @@ __all__ = ["eafe_assemble"]
 
 
 def bernoulli(r):
-    if (np.absolute(r) < 1e-10):
+    if np.absolute(r) < 1e-10:
         return 1.0
-    elif (r < 0.0):
+    elif r < 0.0:
         return r / np.expm1(r)
     else:
         return r * np.exp(-r) / (1 - np.exp(-r))
 
 
 def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
-    logging.getLogger('FFC').setLevel(logging.WARNING)
+    logging.getLogger("FFC").setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
     spatial_dim = mesh.topology().dim()
@@ -88,15 +101,14 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
             vertex = cell_vertex[vertex_id]
             local_tensor[vertex_id, vertex_id] = lumped_reac(vertex, cell)
             for edge_id in range(0, cell_vertex_count):
-                if (edge_id == vertex_id):
+                if edge_id == vertex_id:
                     continue
 
                 edge = cell_vertex[edge_id] - vertex
                 harmonic = edge_harmonic(vertex, edge, cell)
                 psi = edge_psi(vertex, edge, cell)
                 local_tensor[vertex_id, edge_id] *= harmonic * psi
-                local_tensor[vertex_id, vertex_id] -= \
-                    local_tensor[vertex_id, edge_id]
+                local_tensor[vertex_id, vertex_id] -= local_tensor[vertex_id, edge_id]
 
         A.add(local_tensor, local_to_global_map, local_to_global_map)
         A.apply("insert")

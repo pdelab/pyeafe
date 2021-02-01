@@ -9,19 +9,20 @@ def returnZeroOutput(dimension):
         print("value_shape must be positive")
         raise ValueError("Cannot safely evaluate required function")
 
-    if dimension is 1:
+    if dimension == 1:
+
         def returnZero(point, cell):
             return 0.0
 
         return returnZero
 
     def returnZeros(point, cell):
-        return np.zeros(spatial_dim)
+        return np.zeros(dimension)
 
     return returnZeros
 
 
-'''
+"""
 Return a function that has a consistent parameter list
 as used in eafe assembly routines to safely evaluate
 a previously-defined DOLFIN function or expression
@@ -38,18 +39,17 @@ Usage:
     - strict: boolean value that throws an error if true and
         `expression is None`. If this parameter is false, expression will
         default to zero values.
-'''
+"""
 
 
-def create_safe_eval(expression=None, value_shape=None,
-                     strict=False, **kwargs):
+def create_safe_eval(expression=None, value_shape=None, strict=False, **kwargs):
     if value_shape is None:
         try:
             value_shape = expression.value_shape()
-        except Error:
+        except Exception:
             try:
                 value_shape = expression.geometric_dimension()
-            except Error:
+            except Exception:
                 value_shape = 1
 
     if expression is None:
@@ -59,8 +59,7 @@ def create_safe_eval(expression=None, value_shape=None,
 
         return returnZeroOutput(value_shape)
 
-    if hasattr(expression, "eval_cell")\
-       and callable(getattr(expression, "eval_cell")):
+    if hasattr(expression, "eval_cell") and callable(getattr(expression, "eval_cell")):
 
         def evaluate(point, cell):
             values = np.empty(value_shape, dtype=np.float_)
@@ -71,7 +70,8 @@ def create_safe_eval(expression=None, value_shape=None,
 
     if callable(expression):
         signature = getargspec(expression)
-        if len(signature.args) is 1:
+        if len(signature.args) == 1:
+
             def eval_with_cell_stub(point, cell):
                 return expression(point)
 
