@@ -1,0 +1,54 @@
+# Contributing
+The PyEAFE development environment is managed by Anaconda.
+If Anaconda is not installed,
+please [install Anaconda](https://docs.continuum.io/anaconda/install/)
+before proceeding.
+
+To create and activate the virtual environment, run:
+```
+  conda env create --file environment.yml  # create the pyeafe virtual environment
+  conda activate pyeafe
+```
+To exit the virtual environment,
+run `conda deactivate` and the `(pyeafe)` prefix should no longer be visible in the command prompt.
+
+
+## Updating the virtual environment
+When packages are updated, run:
+```
+  conda env update --file environment.yml
+```
+to get the latest environment installed.
+If new dependencies are added to the virtual environment,
+they must be tracked in the `environment.yml` file.
+Writing the list of dependencies to this file should be done by
+```
+  conda env export --name pyeafe > environment.yml
+```
+
+If pre-commit hooks are updated (e.g. new tests require updating dependencies),
+run:
+```
+  pre-commit install && pre-commit run --all-files
+```
+
+
+## Code Styling
+Code smells and linting automatically takes place in the pre-commit hook;
+however, these operations can always be executed manually with:
+```
+  flake8 && black .
+```
+
+
+## Testing
+A suite of unit and functional tests verify the functionality of the repo.
+To run the tests, run `pytest` at the top-level directory.
+
+Ensure that all tests pass before pushing to remote.
+Failing tests prevent pull requests from being reviewed and merged.
+
+
+## Uninstalling
+To uninstall, simply remove the `pyeafe` virtual environment with
+`conda env remove -n pyeafe`.

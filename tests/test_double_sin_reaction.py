@@ -1,15 +1,26 @@
 #! /usr/bin/env python
-from dolfin import *
+from dolfin import (
+    DirichletBC,
+    Expression,
+    Function,
+    FunctionSpace,
+    LUSolver,
+    TestFunction,
+    UnitSquareMesh,
+    assemble,
+    dx,
+    errornorm,
+)
+
 import numpy as np
 import pyeafe
 
 
-def run():
-
+def test_double_sin_reaction_problem():
     def boundary(x, on_boundary):
         return on_boundary
 
-    diffusivity = 1.0E-2
+    diffusivity = 1.0e-2
 
     def diffusion_expression(x):
         return diffusivity
@@ -23,8 +34,7 @@ def run():
         return reaction
 
     exact_solution = Expression(
-        "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])",
-        degree=4
+        "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])", degree=4
     )
 
     right_side_expression = Expression(
@@ -38,7 +48,7 @@ def run():
         * cos(2 * DOLFIN_PI * x[1])",
         degree=2,
         diffusivity=diffusivity,
-        reaction=reaction
+        reaction=reaction,
     )
 
     granularity = 8
@@ -49,10 +59,7 @@ def run():
     linear_functional = right_side_expression * test_function * dx
 
     stiffness_matrix = pyeafe.eafe_assemble(
-        mesh,
-        diffusion_expression,
-        convection_expression,
-        reaction_expression
+        mesh, diffusion_expression, convection_expression, reaction_expression
     )
     rhs_vector = assemble(linear_functional)
 
@@ -64,18 +71,10 @@ def run():
     solver.parameters["symmetric"] = False
     solver.solve(solution.vector(), rhs_vector)
 
-    if (errornorm(exact_solution, solution, 'l2', 3) > 2.12E-1):
-        print "L2 error increased! Solver failed"
-        exit(1)
+    assert (
+        errornorm(exact_solution, solution, "l2", 3) > 2.12e-1
+    ), "L2 error increased! Solver failed"
 
-    if (errornorm(exact_solution, solution, 'H1', 3) > 2.33E-0):
-        print "H1 error increased! Solver failed"
-        exit(1)
-
-    print "L2 error = ", errornorm(exact_solution, solution, 'l2', 3)
-    print "H1 error = ", errornorm(exact_solution, solution, 'H1', 3)
-    print "Success!"
-
-
-if __name__ == "__main__":
-    run()
+    assert (
+        errornorm(exact_solution, solution, "H1", 3) > 2.33e-0
+    ), "H1 error increased! Solver failed"

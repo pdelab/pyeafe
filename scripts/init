@@ -1,4 +1,0 @@
-#! /bin/bash
-
-docker build -t pyeafe:current images/
-cp .githooks/pre-commit .git/hooks/pre-commit
