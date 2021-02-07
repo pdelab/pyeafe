@@ -80,24 +80,14 @@ def test_evaluate():
         return np.array([x[1], -x[0]])
 
     eafe = pyeafe.eafe_assemble(mesh, diffusion, convection)
-    try:
-        compute_error(eafe, mesh)
-    except Exception as error:
-        print("error when executing with python defined coefficients")
-        print(error)
-        exit(1)
+    compute_error(eafe, mesh)
 
     diffusion_expression = Expression("diffusivity", diffusivity=diffusivity, degree=2)
     convection_expression = Expression(("x[1]", "-x[0]"), degree=2)
     eafe_expression = pyeafe.eafe_assemble(
         mesh, diffusion_expression, convection_expression
     )
-    try:
-        compute_error(eafe_expression, mesh)
-    except Exception as error:
-        print("error when executing with python defined coefficients")
-        print(error)
-        exit(1)
+    compute_error(eafe_expression, mesh)
 
     cg = FunctionSpace(mesh, "CG", 1)
     bdm = FunctionSpace(mesh, "BDM", 1)
@@ -106,22 +96,9 @@ def test_evaluate():
     eafe_function = pyeafe.eafe_assemble(
         mesh, diffusion_interpolant, convection_interpolant
     )
-    try:
-        compute_error(eafe_function, mesh)
-    except Exception as error:
-        print("error when executing with python defined coefficients")
-        print(error)
-        exit(1)
+    compute_error(eafe_function, mesh)
 
     eafe_constant = pyeafe.eafe_assemble(mesh, diffusivity, np.zeros(2))
-    try:
-        diff_expr = Expression("diff", degree=2, diff=diffusivity)
-        zero_expr = Expression("zero", degree=2, zero=0.0)
-        compute_error(eafe_constant, mesh, diff_expr, zero_expr)
-    except Exception as error:
-        print("error when executing with constant coefficients")
-        print(error)
-        exit(1)
-
-    print("Errors for various PDE coefficient representations are acceptable")
-    print("Success!")
+    diff_expr = Expression("diff", degree=2, diff=diffusivity)
+    zero_expr = Expression("zero", degree=2, zero=0.0)
+    compute_error(eafe_constant, mesh, diff_expr, zero_expr)
