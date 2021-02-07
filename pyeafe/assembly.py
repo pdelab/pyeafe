@@ -24,11 +24,13 @@ from __future__ import division
 import numpy as np
 import logging
 
+from petsc4py import PETSc
 from dolfin import (
     DirichletBC,
     FunctionSpace,
     TestFunction,
     TrialFunction,
+    as_backend_type,
     assemble,
     assemble_local,
     cells,
@@ -81,6 +83,8 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
     A = assemble(a)
+    mat = as_backend_type(A).mat()
+
     A.zero()
     dof_map = V.dofmap()
     dof_coord = V.tabulate_dof_coordinates()
@@ -109,8 +113,16 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
                 local_tensor[vertex_id, edge_id] *= harmonic * psi
                 local_tensor[vertex_id, vertex_id] -= local_tensor[vertex_id, edge_id]
 
-        A.add(local_tensor, local_to_global_map, local_to_global_map)
-        A.apply("insert")
+        local_to_global_list = local_to_global_map.tolist()
+        mat.setValuesLocal(
+            local_to_global_list,
+            local_to_global_list,
+            local_tensor,
+            PETSc.InsertMode.ADD,
+        )
+
+    A.apply("insert")
+    mat.assemble()
 
     if boundary is not None:
         bc = DirichletBC(V, 0.0, boundary)
