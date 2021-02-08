@@ -46,7 +46,6 @@ def test_double_sin_problem():
     continuous_pw_linear_space = FunctionSpace(mesh, "Lagrange", 1)
     test_function = TestFunction(continuous_pw_linear_space)
     linear_functional = right_side_expression * test_function * dx
-
     stiffness_matrix = pyeafe.eafe_assemble(
         mesh, diffusion_expression, convection_expression
     )
@@ -64,9 +63,9 @@ def test_double_sin_problem():
     solver.solve(solution.vector(), rhs_vector)
 
     assert (
-        errornorm(exact_solution, solution, "l2", 3) > 2.12e-1
+        errornorm(exact_solution, solution, "l2", 3) < 2.12e-1
     ), "L2 error increased! Solver failed"
 
     assert (
-        errornorm(exact_solution, solution, "H1", 3) > 2.33e-0
+        errornorm(exact_solution, solution, "H1", 3) < 2.33e-0
     ), "H1 error increased! Solver failed"

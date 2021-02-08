@@ -1,4 +1,4 @@
-from inspect import getargspec
+from inspect import getfullargspec
 import numpy as np
 
 
@@ -67,7 +67,7 @@ def create_safe_eval(expression=None, value_shape=None, strict=False, **kwargs):
         return evaluate
 
     if callable(expression):
-        signature = getargspec(expression)
+        signature = getfullargspec(expression)
         if len(signature.args) == 1:
 
             def eval_with_cell_stub(point, cell):
