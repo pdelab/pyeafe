@@ -1,38 +1,39 @@
 # PyEAFE
 
-## Overview
+This package is an implementation of the edge-averaged finite element (EAFE) approximation
+to linear convection-diffusion-reaction equations,
+which is use to stabilize discretizations for convection-domintated problems.
+To learn more about EAFE, refer to the EAFE section below.
+
+PyEAFE is designed to be easy to use, consisting of a single function, `eafe_assemble`,
+that returns a stiffness matrix constructed using the EAFE approximation.
+In order for this package to work, the [python implementation of `dolfin`](https://fenicsproject.org/download/)
+is required.
+The function signature for `eafe_assemble` (following syntax for the `typing` module) is:
+```python
+def eafe_assemble(
+  mesh: dolfin.Mesh,
+  diff: dolfin.Expression,
+  conv: Optional[dolfin.Expression] = None,
+  reac: Optional[dolfin.Expression] = None,
+) -> dolfin.Matrix:
+```
+
+## EAFE
 
 Edge-Averaged Finite Elements (EAFE) are stable approximations to standard finite element formulations for linear convection-diffusion-reaction differential equations.
-For any Delaunay mesh, bounded and positive diffusivity coefficient, finite convection coefficient, and non-negative and bounded reaction term, the EAFE discretization yields a monotone stiffness matrix (see [here](http://www.ams.org/journals/mcom/1999-68-228/S0025-5718-99-01148-5/S0025-5718-99-01148-5.pdf)).
+For any Delaunay mesh, differential equations with a bounded and positive diffusivity coefficient, finite convection coefficient, and non-negative and bounded reaction term, the EAFE discretization yields a monotone stiffness matrix (see [here](http://www.ams.org/journals/mcom/1999-68-228/S0025-5718-99-01148-5/S0025-5718-99-01148-5.pdf)).
 Due to the general nature of the EAFE approximation, it can be applied to stabilize a broad variety of convection-dominated PDEs to compute continuous piecewise linear finite element solutions.
 
-**PyEAFE** implements the EAFE approximation for linear convection-diffusion-reaction equations with PDE finite coefficients based on the [Dolfin software package](https://fenicsproject.org/).
-For coupled PDEs and nonlinear problems, helper methods exist in the module that allow users to define the PDE coefficients in terms of finite element functions and their derivatives;
-this is usefule for applying EAFE approximations to linearized systems resulting from a Newton iteration scheme or solving weakly coupled differential equations.
+## Installation
 
-## Getting started
-
-To ensure that the git hooks are properly being used (and creating a docker image for MacOS), run:
+To install run
 ```
-  ./scripts/init
+  pip install pyeafe
 ```
 
-When contributing, ensure code styling is consistent by running `./scripts/lint`.
-This script is automatically run whenever a commit is made.
-Use `git commit ... --no-verify` to bypass linting, although this practice is strongly discouraged.
+PyEAFE requires the python [dolfin](https://fenicsproject.org/download/) package
+from the [FEniCS project](https://fenicsproject.org/) to be installed.
 
-### MacOS
 
-The FEniCS distribution uses [Docker](https://www.docker.com/) for simplicity.
-Install Docker by following [these instructions](https://docs.docker.com/docker-for-mac/install/).
-To run the project in a docker container, run
-```
-  ./scripts/start
-```
-The Docker container will open in a shared directory to the repository's root so that any updates to files in the repository are available from within the Docker container.
-
-To exit the Docker container, simply run the `exit` command.
-
-### Linux systems
-
-If FEniCS is not already installed or there are compatibility issues, follow the steps for MacOS to run FEniCS in a Docker container.
+If you do not want to install `dolfin`, use the docker image found here: [PDELAB](https://github.com/thepnpsolver/pdelab).
