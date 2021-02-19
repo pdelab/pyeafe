@@ -10,7 +10,7 @@ setup(
     url="https://thepnpsolver.github.io",
     author="The PNP Solver",
     author_email="thepnpsolver@gmail.com",
-    license="GNU Lesser General Public License",
+    license="MIT License",
     packages=["pyeafe"],
     zip_safe=False,
     install_requires=[
