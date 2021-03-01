@@ -27,36 +27,17 @@ a previously-defined DOLFIN function or expression
 representing a PDE coefficient
 
 Usage:
-    create_safe_eval(expression, value_shape, strict)
+    create_safe_eval(expression, value_shape)
 
-    - expression: [optional] python function, DOLFIN function,
+    - expression: python function, DOLFIN function,
         or DOLFIN expression to be evaluated.if not provided,
         value_shape is used to return a zero scalar value or zero vector
-    - value_shape: [optional] integer output dimension of function.
+    - value_shape: integer output dimension of function.
         Set to return scalar values by default (value_shape=1).
-    - strict: boolean value that throws an error if true and
-        `expression is None`. If this parameter is false, expression will
-        default to zero values.
 """
 
 
-def create_safe_eval(expression=None, value_shape=None, strict=False, **kwargs):
-    if value_shape is None:
-        try:
-            value_shape = expression.value_shape()
-        except Exception:
-            try:
-                value_shape = expression.geometric_dimension()
-            except Exception:
-                value_shape = 1
-
-    if expression is None:
-        if strict is True:
-            print("expression must be provided in strict mode")
-            raise ValueError("Cannot safely evaluate required function")
-
-        return returnZeroOutput(value_shape)
-
+def create_safe_eval(expression, value_shape):
     if hasattr(expression, "eval_cell") and callable(getattr(expression, "eval_cell")):
 
         def evaluate(point, cell):
