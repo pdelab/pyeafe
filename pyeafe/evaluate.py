@@ -38,6 +38,9 @@ Usage:
 
 
 def create_safe_eval(expression, value_shape):
+    if not callable(expression):
+        return lambda point, cell: expression
+
     if hasattr(expression, "eval_cell") and callable(getattr(expression, "eval_cell")):
 
         def evaluate(point, cell):
@@ -47,18 +50,8 @@ def create_safe_eval(expression, value_shape):
 
         return evaluate
 
-    if callable(expression):
-        signature = getfullargspec(expression)
-        if len(signature.args) == 1:
-
-            def eval_with_cell_stub(point, cell):
-                return expression(point)
-
-            return eval_with_cell_stub
-
-        return expression
-
-    def return_value(point, cell):
-        return expression
-
-    return return_value
+    return (
+        lambda point, cell: expression(point)
+        if len(getfullargspec(expression).args) == 1
+        else expression
+    )
