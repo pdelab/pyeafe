@@ -21,10 +21,13 @@ When packages are updated, run:
 to get the latest environment installed.
 If new dependencies are added to the virtual environment,
 they must be tracked in the `environment.yml` file.
-Writing the list of dependencies to this file should be done by
-```
-  conda env export --name pyeafe > environment.yml
-```
+Newly introduced dependencies should be added to the `environment.yml`,
+as well as tracked separately in `setup.py`,
+where only required dependencies (not dev-dependencies) belong in the `install_requires`
+field.
+
+To see the package version installed by conda, run `conda list ${package-name}`
+inside the conda environment.
 
 If pre-commit hooks are updated (e.g. new tests require updating dependencies),
 run:

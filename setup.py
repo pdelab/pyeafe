@@ -18,12 +18,11 @@ setup(
         "fenics-dolfin>=2019.1.0",
         "numpy>=1.19.0",
         "petsc4py>=3.12.0",
+        "typing>=3.7.4.3",
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
     tests_require=["pytest", "flake8", "black"],
     setup_requires=["pytest-runner"],
-    project_urls={
-        'Source Code': 'https://github.com/thepnpsolver/pyeafe',
-    },
+    project_urls={"Source Code": "https://github.com/thepnpsolver/pyeafe"},
 )
