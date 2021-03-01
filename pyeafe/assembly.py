@@ -27,6 +27,7 @@ import logging
 from petsc4py import PETSc
 from dolfin import (
     DirichletBC,
+    Expression,
     FunctionSpace,
     TestFunction,
     TrialFunction,
@@ -39,6 +40,7 @@ from dolfin import (
     inner,
     parameters,
 )
+from typing import Optional
 
 from pyeafe.evaluate import create_safe_eval
 
@@ -52,31 +54,55 @@ def bernoulli(r):
         return r * np.exp(-r) / (1 - np.exp(-r))
 
 
-def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
-    logging.getLogger("FFC").setLevel(logging.WARNING)
-    quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
-    parameters["form_compiler"]["quadrature_degree"] = 2
-    spatial_dim = mesh.topology().dim()
-    cell_vertex_count = spatial_dim + 1
+def define_edge_advection(
+    dim: int, diff: Expression, conv: Optional[Expression] = None
+) -> callable:
+    safe_diff = create_safe_eval(diff, 1)
+    if conv is None:
 
-    safe_diff = create_safe_eval(diff, 1, True)
-    safe_conv = create_safe_eval(conv, spatial_dim)
-    safe_reac = create_safe_eval(reac, 1)
+        def edge_harmonic(start, edge, cell):
+            midpt = start + 0.5 * edge
+            return safe_diff(midpt, cell)
 
-    def edge_harmonic(start, edge, cell):
-        midpt = start + 0.5 * edge
-        return safe_diff(midpt, cell)
+        return edge_harmonic
+
+    safe_conv = create_safe_eval(conv, dim)
 
     def edge_psi(start, edge, cell):
         midpt = start + 0.5 * edge
         diffusion = safe_diff(midpt, cell)
         convection = safe_conv(midpt, cell)
         midpt_approx = np.inner(convection, edge)
-        return bernoulli(-midpt_approx / diffusion)
+        return diffusion * bernoulli(-midpt_approx / diffusion)
+
+    return edge_psi
+
+
+def define_mass_lumping(
+    cell_vertex_count: int,
+    reac: Optional[Expression] = None,
+) -> callable:
+    if reac is None:
+        return lambda v, c: 0.0
+
+    safe_reac = create_safe_eval(reac, 1)
 
     def lumped_reac(vertex, cell):
-        reaction = safe_reac(vertex, cell)
-        return reaction * cell.volume() / cell_vertex_count
+        return safe_reac(vertex, cell) * cell.volume() / cell_vertex_count
+
+    return lumped_reac
+
+
+def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+    logging.getLogger("FFC").setLevel(logging.WARNING)
+    quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
+    parameters["form_compiler"]["quadrature_degree"] = 2
+
+    spatial_dim = mesh.topology().dim()
+    cell_vertex_count = spatial_dim + 1
+
+    edge_advection = define_edge_advection(spatial_dim, diff, conv)
+    lumped_reac = define_mass_lumping(cell_vertex_count, reac)
 
     V = FunctionSpace(mesh, "Lagrange", 1)
     u = TrialFunction(V)
@@ -103,14 +129,13 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
         for vertex_id in range(0, cell_vertex_count):
             vertex = cell_vertex[vertex_id]
             local_tensor[vertex_id, vertex_id] = lumped_reac(vertex, cell)
+
             for edge_id in range(0, cell_vertex_count):
                 if edge_id == vertex_id:
                     continue
 
                 edge = cell_vertex[edge_id] - vertex
-                harmonic = edge_harmonic(vertex, edge, cell)
-                psi = edge_psi(vertex, edge, cell)
-                local_tensor[vertex_id, edge_id] *= harmonic * psi
+                local_tensor[vertex_id, edge_id] *= edge_advection(vertex, edge, cell)
                 local_tensor[vertex_id, vertex_id] -= local_tensor[vertex_id, edge_id]
 
         local_to_global_list = local_to_global_map.tolist()
