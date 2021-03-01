@@ -26,9 +26,9 @@ import logging
 
 from petsc4py import PETSc
 from dolfin import (
-    DirichletBC,
     Expression,
     FunctionSpace,
+    Mesh,
     TestFunction,
     TrialFunction,
     as_backend_type,
@@ -93,7 +93,12 @@ def define_mass_lumping(
     return lumped_reac
 
 
-def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
+def eafe_assemble(
+    mesh: Mesh,
+    diffusion: Expression,
+    convection: Optional[Expression] = None,
+    reaction: Optional[Expression] = None,
+):
     logging.getLogger("FFC").setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
@@ -101,8 +106,8 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
     spatial_dim = mesh.topology().dim()
     cell_vertex_count = spatial_dim + 1
 
-    edge_advection = define_edge_advection(spatial_dim, diff, conv)
-    lumped_reac = define_mass_lumping(cell_vertex_count, reac)
+    edge_advection = define_edge_advection(spatial_dim, diffusion, convection)
+    lumped_reaction = define_mass_lumping(cell_vertex_count, reaction)
 
     V = FunctionSpace(mesh, "Lagrange", 1)
     u = TrialFunction(V)
@@ -116,9 +121,8 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
     dof_coord = V.tabulate_dof_coordinates()
 
     for cell in cells(mesh):
-        local_to_global_map = dof_map.cell_dofs(cell.index())
         local_tensor = assemble_local(a, cell)
-
+        local_to_global_map = dof_map.cell_dofs(cell.index())
         cell_vertex = np.empty([cell_vertex_count, spatial_dim])
 
         for local_dof in range(0, cell_vertex_count):
@@ -128,7 +132,7 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
 
         for vertex_id in range(0, cell_vertex_count):
             vertex = cell_vertex[vertex_id]
-            local_tensor[vertex_id, vertex_id] = lumped_reac(vertex, cell)
+            local_tensor[vertex_id, vertex_id] = lumped_reaction(vertex, cell)
 
             for edge_id in range(0, cell_vertex_count):
                 if edge_id == vertex_id:
@@ -148,10 +152,6 @@ def eafe_assemble(mesh, diff, conv=None, reac=None, boundary=None, **kwargs):
 
     A.apply("insert")
     mat.assemble()
-
-    if boundary is not None:
-        bc = DirichletBC(V, 0.0, boundary)
-        bc.apply(A)
 
     parameters["form_compiler"]["quadrature_degree"] = quadrature_degree
     return A
