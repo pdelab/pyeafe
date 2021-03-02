@@ -1,45 +1,28 @@
+from dolfin import Expression
 from inspect import getfullargspec
+from typing import Union
+
 import numpy as np
 
-
-def returnZeroOutput(dimension):
-    if dimension < 1:
-        print("value_shape must be positive")
-        raise ValueError("Cannot safely evaluate required function")
-
-    if dimension == 1:
-
-        def returnZero(point, cell):
-            return 0.0
-
-        return returnZero
-
-    def returnZeros(point, cell):
-        return np.zeros(dimension)
-
-    return returnZeros
+FlexibleExpression = Union[Expression, callable, np.array, float]
 
 
-"""
-Return a function that has a consistent parameter list
-as used in eafe assembly routines to safely evaluate
-a previously-defined DOLFIN function or expression
-representing a PDE coefficient
+# TODO: pass in mesh and define `eval_cell`
+def create_safe_eval(
+    expression: FlexibleExpression,
+    value_shape: int,
+) -> callable:
+    """
+    Wrap expression to ensure consistent calling for various input coefficients.
+    :param expression: dolfin.Expression, python function, or constant value
+    :param value_shape: integer output dimension of function
 
-Usage:
-    create_safe_eval(expression, value_shape)
+    :return: Return a function that has a consistent parameter list:
+        (point: dolfin.Point, cell: dolfin.Cell) -> Union[np.array, float]
+    """
 
-    - expression: python function, DOLFIN function,
-        or DOLFIN expression to be evaluated.if not provided,
-        value_shape is used to return a zero scalar value or zero vector
-    - value_shape: integer output dimension of function.
-        Set to return scalar values by default (value_shape=1).
-"""
-
-
-def create_safe_eval(expression, value_shape):
     if not callable(expression):
-        return lambda point, cell: expression
+        return lambda p, c: expression
 
     if hasattr(expression, "eval_cell") and callable(getattr(expression, "eval_cell")):
 
@@ -50,8 +33,5 @@ def create_safe_eval(expression, value_shape):
 
         return evaluate
 
-    return (
-        lambda point, cell: expression(point)
-        if len(getfullargspec(expression).args) == 1
-        else expression
-    )
+    arg_count: int = len(getfullargspec(expression).args)
+    return lambda point, cell: expression(point) if arg_count == 1 else expression
