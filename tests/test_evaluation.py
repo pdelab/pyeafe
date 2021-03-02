@@ -10,11 +10,8 @@ from dolfin import (
     assemble,
     dx,
     errornorm,
-    interpolate,
 )
 
-import numpy as np
-import logging
 import pyeafe
 
 
@@ -68,17 +65,10 @@ def compute_error(
 
 
 def test_evaluate():
-    logging.getLogger("FFC").setLevel(logging.WARNING)
-
     granularity = 8
     mesh = UnitSquareMesh(granularity, granularity)
-
-    def diffusion(x):
-        return diffusivity
-
-    def convection(x):
-        return np.array([x[1], -x[0]])
-
+    diffusion = Expression("1.e-2", degree=0)
+    convection = Expression(("x[1]", "-x[0]"), degree=1)
     eafe = pyeafe.eafe_assemble(mesh, diffusion, convection)
     compute_error(eafe, mesh)
 
@@ -89,16 +79,16 @@ def test_evaluate():
     )
     compute_error(eafe_expression, mesh)
 
-    cg = FunctionSpace(mesh, "CG", 1)
-    bdm = FunctionSpace(mesh, "BDM", 1)
-    diffusion_interpolant = interpolate(diffusion_expression, cg)
-    convection_interpolant = interpolate(convection_expression, bdm)
-    eafe_function = pyeafe.eafe_assemble(
-        mesh, diffusion_interpolant, convection_interpolant
-    )
-    compute_error(eafe_function, mesh)
-
-    eafe_constant = pyeafe.eafe_assemble(mesh, diffusivity, np.zeros(2))
-    diff_expr = Expression("diff", degree=2, diff=diffusivity)
-    zero_expr = Expression("zero", degree=2, zero=0.0)
-    compute_error(eafe_constant, mesh, diff_expr, zero_expr)
+    # cg = FunctionSpace(mesh, "CG", 1)
+    # bdm = FunctionSpace(mesh, "BDM", 1)
+    # diffusion_interpolant = interpolate(diffusion_expression, cg)
+    # convection_interpolant = interpolate(convection_expression, bdm)
+    # eafe_function = pyeafe.eafe_assemble(
+    #     mesh, diffusion_interpolant, convection_interpolant
+    # )
+    # compute_error(eafe_function, mesh)
+    #
+    # eafe_constant = pyeafe.eafe_assemble(mesh, diffusivity, np.zeros(2))
+    # diff_expr = Expression("diff", degree=2, diff=diffusivity)
+    # zero_expr = Expression("zero", degree=2, zero=0.0)
+    # compute_error(eafe_constant, mesh, diff_expr, zero_expr)

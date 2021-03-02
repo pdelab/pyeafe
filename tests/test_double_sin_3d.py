@@ -12,7 +12,6 @@ from dolfin import (
     errornorm,
 )
 
-import numpy as np
 import pyeafe
 
 
@@ -21,13 +20,8 @@ def test_double_sin_3d_problem():
         return on_boundary
 
     diffusivity = 1.0e-2
-
-    def diffusion_expression(x):
-        return diffusivity
-
-    def convection_expression(x):
-        return np.array([x[1], -x[0], 0.0])
-
+    diffusion = Expression("diffusivity", degree=0, diffusivity=diffusivity)
+    convection = Expression(("x[1]", "-x[0]", "0."), degree=1)
     exact_solution = Expression(
         "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])", degree=4
     )
@@ -50,9 +44,7 @@ def test_double_sin_3d_problem():
     test_function = TestFunction(continuous_pw_linear_space)
     linear_functional = right_side_expression * test_function * dx
 
-    stiffness_matrix = pyeafe.eafe_assemble(
-        mesh, diffusion_expression, convection_expression
-    )
+    stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion, convection)
     rhs_vector = assemble(linear_functional)
 
     bc = DirichletBC(continuous_pw_linear_space, exact_solution, boundary)
