@@ -122,11 +122,40 @@ def eafe_assemble(
     :return: dolfin.Matrix pertaining to EAFE stiffness matrix
     """
 
+    if not issubclass(mesh.__class__, Mesh):
+        raise TypeError("Invalid mesh parameter: must inherit from dolfin.Mesh")
+
+    if not issubclass(diffusion.__class__, Expression):
+        raise TypeError(
+            "Invalid diffusion parameter: must inherit from dolfin.Expression",
+        )
+
+    spatial_dim: int = mesh.topology().dim()
+    if convection is not None:
+        if not issubclass(convection.__class__, Expression):
+            raise TypeError(
+                "Invalid convection parameter: must inherit from dolfin.Expression",
+            )
+
+        if spatial_dim > 1:
+            conv_rank: int = convection.value_rank()
+            if conv_rank != 1:
+                raise ValueError("Invalid convection parameter: value_rank must be 1")
+
+            if convection.value_dimension(0) != spatial_dim:
+                raise ValueError(
+                    "Invalid convection parameter: value_dimension(0) must match mesh spatial dimension"  # noqa E501
+                )
+
+    if reaction is not None and not issubclass(reaction.__class__, Expression):
+        raise TypeError(
+            "Invalid reaction parameter: must inherit from dolfin.Expression",
+        )
+
     logging.getLogger("FFC").setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
 
-    spatial_dim: int = mesh.topology().dim()
     cell_vertex_count: int = spatial_dim + 1
 
     edge_advection = define_edge_advection(spatial_dim, diffusion, convection)

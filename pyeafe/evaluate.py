@@ -8,10 +8,7 @@ FlexibleExpression = Union[Expression, callable, np.array, float]
 
 
 # TODO: pass in mesh and define `eval_cell`
-def create_safe_eval(
-    expression: FlexibleExpression,
-    value_shape: int,
-) -> callable:
+def create_safe_eval(expression: FlexibleExpression, value_shape: int) -> callable:
     """
     Wrap expression to ensure consistent calling for various input coefficients.
     :param expression: dolfin.Expression, python function, or constant value
