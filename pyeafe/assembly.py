@@ -1,28 +1,9 @@
-"""
-Assembly of stiffness matrix for a generic
-convection diffusion reaction equation:
-  diff in L1, conv in [L1]^d, reac in L_infty,
-
-  -div(diff * grad(u) + conv * u) + reac * u.
-
-Integral quantities are approximated by quadrature.
-
-Usage:
-    eafe_assemble(mesh, diff, conv, reac, boundary)
-
-    - mesh: mesh defining finite element space
-    - diff: DOLFIN expression for diffusion
-    - conv: DOLFIN expression for convection
-    - reac: [optional] DOLFIN expression for reaction
-    - boundary: [optional] function taking in spatial
-        coordinate and on_boundary boolean to determine
-        whether coordinate is on a Dirichlet boundary
-        (boundary condition is assumed to be zero)
-"""
+""" The primary function of the library: eafe_assemble """
 
 from __future__ import division
 import numpy as np
 import logging
+import dolfin
 
 from petsc4py import PETSc
 from dolfin import (
@@ -45,47 +26,74 @@ from typing import Optional
 from pyeafe.evaluate import create_safe_eval
 
 
-def bernoulli(r):
+def bernoulli(r: float) -> float:
+    """ evaluate the Bernoulli function at the given value """
+
     if np.absolute(r) < 1e-10:
         return 1.0
-    elif r < 0.0:
+
+    if r < 0.0:
         return r / np.expm1(r)
-    else:
-        return r * np.exp(-r) / (1 - np.exp(-r))
+
+    return r * np.exp(-r) / (1 - np.exp(-r))
 
 
 def define_edge_advection(
-    dim: int, diff: Expression, conv: Optional[Expression] = None
+    dim: int, diffusion: Expression, convection: Optional[Expression] = None
 ) -> callable:
-    safe_diff = create_safe_eval(diff, 1)
-    if conv is None:
+    """
+    Get most efficient method for computing the Edge-Averaged flux value.
 
-        def edge_harmonic(start, edge, cell):
+    :param dim: integer dimension of the convection term
+    :param diffusion: Expression for diffusivity (should be positive)
+    :param convection: [Optional] Expression for convection term
+                        (must evaluate to an array of size `dim`)
+
+    :return: Method for computing flux contribution from a cell across an edge:
+        (start: dolfin.Vertex, edge: dolfin.Edge, cell: dolfin.Cell) -> float
+    """
+
+    safe_diff = create_safe_eval(diffusion, 1)
+    if convection is None:
+
+        def edge_harmonic(start: dolfin.Vertex, edge: dolfin.Edge, cell: dolfin.Cell):
             midpt = start + 0.5 * edge
             return safe_diff(midpt, cell)
 
         return edge_harmonic
 
-    safe_conv = create_safe_eval(conv, dim)
+    safe_conv = create_safe_eval(convection, dim)
 
-    def edge_psi(start, edge, cell):
+    def edge_psi(start: dolfin.Vertex, edge: dolfin.Edge, cell: dolfin.Cell):
         midpt = start + 0.5 * edge
-        diffusion = safe_diff(midpt, cell)
-        convection = safe_conv(midpt, cell)
-        midpt_approx = np.inner(convection, edge)
-        return diffusion * bernoulli(-midpt_approx / diffusion)
+        diff = safe_diff(midpt, cell)
+        conv = safe_conv(midpt, cell)
+        midpt_approx = np.inner(conv, edge)
+        return diff * bernoulli(-midpt_approx / diff)
 
     return edge_psi
 
 
 def define_mass_lumping(
     cell_vertex_count: int,
-    reac: Optional[Expression] = None,
+    reaction: Optional[Expression] = None,
 ) -> callable:
-    if reac is None:
+    """
+    Return the most efficient method for providing the values on the diagonal
+    pertaining to the optionally given reaction coefficient.
+
+    :param cell_vertex_count: number of vertices in a given cell
+    :param reaction: [Optional] Expression for reaction term.
+
+    :return: Method for geting a cell's contribution to the mass-lumped reaction
+        stiffness matrix:
+        (vertex: dolfin.Vertex, cell: dolfin.Cell) -> float
+    """
+
+    if reaction is None:
         return lambda v, c: 0.0
 
-    safe_reac = create_safe_eval(reac, 1)
+    safe_reac = create_safe_eval(reaction, 1)
 
     def lumped_reac(vertex, cell):
         return safe_reac(vertex, cell) * cell.volume() / cell_vertex_count
@@ -98,13 +106,28 @@ def eafe_assemble(
     diffusion: Expression,
     convection: Optional[Expression] = None,
     reaction: Optional[Expression] = None,
-):
+) -> dolfin.Matrix:
+    """
+    Assembly of stiffness matrix for a generic linear elliptic equation:
+    for `u` a continuous piecewise-linear finite element function,
+      -div(diffusion * grad(u) + convection * u) + reaction * u = source
+
+    Edge-integral quantities are approximated by a midpoint quadrature rule.
+
+    :param mesh: Mesh defining finite element space
+    :param diff: Expression for diffusion coefficient
+    :param conv: [Optional] Expression for convection coefficient
+    :param reac: [Optional] Expression for reaction coefficient
+
+    :return: dolfin.Matrix pertaining to EAFE stiffness matrix
+    """
+
     logging.getLogger("FFC").setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
 
-    spatial_dim = mesh.topology().dim()
-    cell_vertex_count = spatial_dim + 1
+    spatial_dim: int = mesh.topology().dim()
+    cell_vertex_count: int = spatial_dim + 1
 
     edge_advection = define_edge_advection(spatial_dim, diffusion, convection)
     lumped_reaction = define_mass_lumping(cell_vertex_count, reaction)
@@ -113,8 +136,8 @@ def eafe_assemble(
     u = TrialFunction(V)
     v = TestFunction(V)
     a = inner(grad(u), grad(v)) * dx
-    A = assemble(a)
-    mat = as_backend_type(A).mat()
+    A: dolfin.Matrix = assemble(a)
+    mat: dolfin.PETScMatrix = as_backend_type(A).mat()
 
     A.zero()
     dof_map = V.dofmap()
