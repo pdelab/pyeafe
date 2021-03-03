@@ -30,7 +30,7 @@ def validate_coefficient(coefficient: Coefficient) -> bool:
     return False
 
 
-def ensure_edge_eval(
+def ensure_cell_eval(
     coefficient: Coefficient,
     value_shape: int,
 ) -> Callable[[Point, Cell], Union[float, np.array]]:
@@ -39,8 +39,7 @@ def ensure_edge_eval(
     :param coefficient: pyeafe.Coefficient to be evaluated
     :param value_shape: integer output dimension of function
 
-    :return: Return a function that has a consistent parameter list:
-        (point: dolfin.Point, cell: dolfin.Cell) -> Union[np.array, float]
+    :return: Return a function that has a uses eval_cell when available.
     """
 
     if not validate_coefficient(coefficient):

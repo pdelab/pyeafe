@@ -21,7 +21,7 @@ from dolfin import (
 )
 from typing import Callable, Optional
 
-from pyeafe.utils import Coefficient, ensure_edge_eval
+from pyeafe.utils import Coefficient, ensure_cell_eval
 
 
 def bernoulli(r: float) -> float:
@@ -51,7 +51,7 @@ def define_edge_advection(
         Callable[[dolfin.Vertex, dolfin.Edge, dolfin.Cell], float]
     """
 
-    diffusion_with_edge_eval = ensure_edge_eval(diffusion, 1)
+    diffusion_with_edge_eval = ensure_cell_eval(diffusion, 1)
     if convection is None:
 
         def edge_harmonic(start, edge, cell):
@@ -60,7 +60,7 @@ def define_edge_advection(
 
         return edge_harmonic
 
-    convection_with_edge_eval = ensure_edge_eval(convection, dim)
+    convection_with_edge_eval = ensure_cell_eval(convection, dim)
     if dim > 1:
         conv_rank: int = convection.value_rank()
         if conv_rank != 1:
@@ -100,7 +100,7 @@ def define_mass_lumping(
     if reaction is None:
         return lambda v, c: 0.0
 
-    reaction_with_edge_eval = ensure_edge_eval(reaction, 1)
+    reaction_with_edge_eval = ensure_cell_eval(reaction, 1)
 
     def lumped_reac(vertex, cell):
         return reaction_with_edge_eval(vertex, cell) * cell.volume() / cell_vertex_count
