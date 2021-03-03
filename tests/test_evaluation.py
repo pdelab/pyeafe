@@ -10,6 +10,7 @@ from dolfin import (
     assemble,
     dx,
     errornorm,
+    interpolate,
 )
 
 import pyeafe
@@ -79,16 +80,11 @@ def test_evaluate():
     )
     compute_error(eafe_expression, mesh)
 
-    # cg = FunctionSpace(mesh, "CG", 1)
-    # bdm = FunctionSpace(mesh, "BDM", 1)
-    # diffusion_interpolant = interpolate(diffusion_expression, cg)
-    # convection_interpolant = interpolate(convection_expression, bdm)
-    # eafe_function = pyeafe.eafe_assemble(
-    #     mesh, diffusion_interpolant, convection_interpolant
-    # )
-    # compute_error(eafe_function, mesh)
-    #
-    # eafe_constant = pyeafe.eafe_assemble(mesh, diffusivity, np.zeros(2))
-    # diff_expr = Expression("diff", degree=2, diff=diffusivity)
-    # zero_expr = Expression("zero", degree=2, zero=0.0)
-    # compute_error(eafe_constant, mesh, diff_expr, zero_expr)
+    cg = FunctionSpace(mesh, "CG", 1)
+    bdm = FunctionSpace(mesh, "BDM", 1)
+    diffusion_interpolant = interpolate(diffusion_expression, cg)
+    convection_interpolant = interpolate(convection_expression, bdm)
+    eafe_function = pyeafe.eafe_assemble(
+        mesh, diffusion_interpolant, convection_interpolant
+    )
+    compute_error(eafe_function, mesh)

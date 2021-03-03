@@ -7,7 +7,6 @@ import dolfin
 
 from petsc4py import PETSc
 from dolfin import (
-    Expression,
     FunctionSpace,
     Mesh,
     TestFunction,
@@ -21,9 +20,9 @@ from dolfin import (
     inner,
     parameters,
 )
-from typing import Optional
+from typing import Callable, Optional
 
-from pyeafe.evaluate import create_safe_eval
+from pyeafe.utils import Coefficient, create_safe_eval, validate_coefficient
 
 
 def bernoulli(r: float) -> float:
@@ -39,24 +38,24 @@ def bernoulli(r: float) -> float:
 
 
 def define_edge_advection(
-    dim: int, diffusion: Expression, convection: Optional[Expression] = None
-) -> callable:
+    dim: int, diffusion: Coefficient, convection: Optional[Coefficient] = None
+) -> Callable[[dolfin.Vertex, dolfin.Edge, dolfin.Cell], float]:
     """
     Get most efficient method for computing the Edge-Averaged flux value.
 
     :param dim: integer dimension of the convection term
-    :param diffusion: Expression for diffusivity (should be positive)
-    :param convection: [Optional] Expression for convection term
+    :param diffusion: Coefficient for diffusivity (should be positive)
+    :param convection: [Optional] Coefficient for convection term
                         (must evaluate to an array of size `dim`)
 
     :return: Method for computing flux contribution from a cell across an edge:
-        (start: dolfin.Vertex, edge: dolfin.Edge, cell: dolfin.Cell) -> float
+        Callable[[dolfin.Vertex, dolfin.Edge, dolfin.Cell], float]
     """
 
     safe_diff = create_safe_eval(diffusion, 1)
     if convection is None:
 
-        def edge_harmonic(start: dolfin.Vertex, edge: dolfin.Edge, cell: dolfin.Cell):
+        def edge_harmonic(start, edge, cell):
             midpt = start + 0.5 * edge
             return safe_diff(midpt, cell)
 
@@ -64,7 +63,7 @@ def define_edge_advection(
 
     safe_conv = create_safe_eval(convection, dim)
 
-    def edge_psi(start: dolfin.Vertex, edge: dolfin.Edge, cell: dolfin.Cell):
+    def edge_psi(start, edge, cell):
         midpt = start + 0.5 * edge
         diff = safe_diff(midpt, cell)
         conv = safe_conv(midpt, cell)
@@ -76,14 +75,14 @@ def define_edge_advection(
 
 def define_mass_lumping(
     cell_vertex_count: int,
-    reaction: Optional[Expression] = None,
+    reaction: Optional[Coefficient] = None,
 ) -> callable:
     """
     Return the most efficient method for providing the values on the diagonal
     pertaining to the optionally given reaction coefficient.
 
     :param cell_vertex_count: number of vertices in a given cell
-    :param reaction: [Optional] Expression for reaction term.
+    :param reaction: [Optional] Coefficient for reaction term.
 
     :return: Method for geting a cell's contribution to the mass-lumped reaction
         stiffness matrix:
@@ -103,9 +102,9 @@ def define_mass_lumping(
 
 def eafe_assemble(
     mesh: Mesh,
-    diffusion: Expression,
-    convection: Optional[Expression] = None,
-    reaction: Optional[Expression] = None,
+    diffusion: Coefficient,
+    convection: Optional[Coefficient] = None,
+    reaction: Optional[Coefficient] = None,
 ) -> dolfin.Matrix:
     """
     Assembly of stiffness matrix for a generic linear elliptic equation:
@@ -115,9 +114,9 @@ def eafe_assemble(
     Edge-integral quantities are approximated by a midpoint quadrature rule.
 
     :param mesh: Mesh defining finite element space
-    :param diff: Expression for diffusion coefficient
-    :param conv: [Optional] Expression for convection coefficient
-    :param reac: [Optional] Expression for reaction coefficient
+    :param diff: Coefficient for diffusion coefficient
+    :param conv: [Optional] Coefficient for convection coefficient
+    :param reac: [Optional] Coefficient for reaction coefficient
 
     :return: dolfin.Matrix pertaining to EAFE stiffness matrix
     """
@@ -125,16 +124,16 @@ def eafe_assemble(
     if not issubclass(mesh.__class__, Mesh):
         raise TypeError("Invalid mesh parameter: must inherit from dolfin.Mesh")
 
-    if not issubclass(diffusion.__class__, Expression):
+    if not validate_coefficient(diffusion):
         raise TypeError(
-            "Invalid diffusion parameter: must inherit from dolfin.Expression",
+            "Invalid diffusion parameter: must inherit from pyeafe.Coefficient",
         )
 
     spatial_dim: int = mesh.topology().dim()
     if convection is not None:
-        if not issubclass(convection.__class__, Expression):
+        if not validate_coefficient(convection):
             raise TypeError(
-                "Invalid convection parameter: must inherit from dolfin.Expression",
+                "Invalid convection parameter: must inherit from pyeafe.Coefficient",
             )
 
         if spatial_dim > 1:
@@ -147,9 +146,9 @@ def eafe_assemble(
                     "Invalid convection parameter: value_dimension(0) must match mesh spatial dimension"  # noqa E501
                 )
 
-    if reaction is not None and not issubclass(reaction.__class__, Expression):
+    if reaction is not None and not validate_coefficient(reaction):
         raise TypeError(
-            "Invalid reaction parameter: must inherit from dolfin.Expression",
+            "Invalid reaction parameter: must inherit from pyeafe.Coefficient",
         )
 
     logging.getLogger("FFC").setLevel(logging.WARNING)
