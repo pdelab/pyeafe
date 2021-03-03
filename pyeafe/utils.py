@@ -30,31 +30,32 @@ def validate_coefficient(coefficient: Coefficient) -> bool:
     return False
 
 
-# TODO: pass in mesh and define `eval_cell`
-def create_safe_eval(
-    expression: Coefficient,
+def ensure_edge_eval(
+    coefficient: Coefficient,
     value_shape: int,
 ) -> Callable[[Point, Cell], Union[float, np.array]]:
     """
-    Wrap expression to ensure consistent calling for various input coefficients.
-    :param expression: pyeafe.Coefficient to be evaluated
+    Wrap coefficient to ensure consistent calling for various input coefficients.
+    :param coefficient: pyeafe.Coefficient to be evaluated
     :param value_shape: integer output dimension of function
 
     :return: Return a function that has a consistent parameter list:
         (point: dolfin.Point, cell: dolfin.Cell) -> Union[np.array, float]
     """
 
-    if not callable(expression):
-        return lambda p, c: expression
+    if not validate_coefficient(coefficient):
+        raise TypeError("Invalid coefficient: Must inherit from pyeafe.Coefficient")
 
-    if hasattr(expression, "eval_cell") and callable(getattr(expression, "eval_cell")):
+    if hasattr(coefficient, "eval_cell") and callable(
+        getattr(coefficient, "eval_cell")
+    ):
 
         def evaluate(point, cell):
             values = np.empty(value_shape, dtype=np.float_)
-            expression.eval_cell(values, point, cell)
+            coefficient.eval_cell(values, point, cell)
             return values
 
         return evaluate
 
-    arg_count: int = len(getfullargspec(expression).args)
-    return lambda point, cell: expression(point) if arg_count == 1 else expression
+    arg_count: int = len(getfullargspec(coefficient).args)
+    return lambda point, cell: coefficient(point) if arg_count == 1 else coefficient

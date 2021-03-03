@@ -4,7 +4,6 @@ from __future__ import division
 import numpy as np
 import logging
 import dolfin
-
 from petsc4py import PETSc
 from dolfin import (
     FunctionSpace,
@@ -22,7 +21,7 @@ from dolfin import (
 )
 from typing import Callable, Optional
 
-from pyeafe.utils import Coefficient, create_safe_eval, validate_coefficient
+from pyeafe.utils import Coefficient, ensure_edge_eval
 
 
 def bernoulli(r: float) -> float:
@@ -52,21 +51,30 @@ def define_edge_advection(
         Callable[[dolfin.Vertex, dolfin.Edge, dolfin.Cell], float]
     """
 
-    safe_diff = create_safe_eval(diffusion, 1)
+    diffusion_with_edge_eval = ensure_edge_eval(diffusion, 1)
     if convection is None:
 
         def edge_harmonic(start, edge, cell):
             midpt = start + 0.5 * edge
-            return safe_diff(midpt, cell)
+            return diffusion_with_edge_eval(midpt, cell)
 
         return edge_harmonic
 
-    safe_conv = create_safe_eval(convection, dim)
+    convection_with_edge_eval = ensure_edge_eval(convection, dim)
+    if dim > 1:
+        conv_rank: int = convection.value_rank()
+        if conv_rank != 1:
+            raise ValueError("Invalid convection parameter: value_rank must be 1")
+
+        if convection.value_dimension(0) != dim:
+            raise ValueError(
+                "Invalid convection parameter: value_dimension(0) must match mesh spatial dimension"  # noqa E501
+            )
 
     def edge_psi(start, edge, cell):
         midpt = start + 0.5 * edge
-        diff = safe_diff(midpt, cell)
-        conv = safe_conv(midpt, cell)
+        diff = diffusion_with_edge_eval(midpt, cell)
+        conv = convection_with_edge_eval(midpt, cell)
         midpt_approx = np.inner(conv, edge)
         return diff * bernoulli(-midpt_approx / diff)
 
@@ -92,10 +100,10 @@ def define_mass_lumping(
     if reaction is None:
         return lambda v, c: 0.0
 
-    safe_reac = create_safe_eval(reaction, 1)
+    reaction_with_edge_eval = ensure_edge_eval(reaction, 1)
 
     def lumped_reac(vertex, cell):
-        return safe_reac(vertex, cell) * cell.volume() / cell_vertex_count
+        return reaction_with_edge_eval(vertex, cell) * cell.volume() / cell_vertex_count
 
     return lumped_reac
 
@@ -124,37 +132,11 @@ def eafe_assemble(
     if not issubclass(mesh.__class__, Mesh):
         raise TypeError("Invalid mesh parameter: must inherit from dolfin.Mesh")
 
-    if not validate_coefficient(diffusion):
-        raise TypeError(
-            "Invalid diffusion parameter: must inherit from pyeafe.Coefficient",
-        )
-
-    spatial_dim: int = mesh.topology().dim()
-    if convection is not None:
-        if not validate_coefficient(convection):
-            raise TypeError(
-                "Invalid convection parameter: must inherit from pyeafe.Coefficient",
-            )
-
-        if spatial_dim > 1:
-            conv_rank: int = convection.value_rank()
-            if conv_rank != 1:
-                raise ValueError("Invalid convection parameter: value_rank must be 1")
-
-            if convection.value_dimension(0) != spatial_dim:
-                raise ValueError(
-                    "Invalid convection parameter: value_dimension(0) must match mesh spatial dimension"  # noqa E501
-                )
-
-    if reaction is not None and not validate_coefficient(reaction):
-        raise TypeError(
-            "Invalid reaction parameter: must inherit from pyeafe.Coefficient",
-        )
-
     logging.getLogger("FFC").setLevel(logging.WARNING)
     quadrature_degree = parameters["form_compiler"]["quadrature_degree"]
     parameters["form_compiler"]["quadrature_degree"] = 2
 
+    spatial_dim: int = mesh.topology().dim()
     cell_vertex_count: int = spatial_dim + 1
 
     edge_advection = define_edge_advection(spatial_dim, diffusion, convection)
