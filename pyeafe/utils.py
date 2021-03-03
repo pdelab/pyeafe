@@ -6,30 +6,12 @@ from dolfin import (
     Constant,
     Expression,
     Function,
-    # MultiMeshFunction,
+    MultiMeshFunction,
     Point,
     Cell,
 )
 
-# from dolfin.cpp.function import (
-#     Constant as CppConstant,
-#     Expression as CppExpression,
-#     Function as CppFunction,
-#     GenericFunction as CppGenericFunction,
-#     MultiMeshFunction as CppMultiMeshFunction,
-# )
-
-Coefficient = Union[
-    Constant,
-    Expression,
-    Function,
-    # MultiMeshFunction,
-    # CppConstant,
-    # CppExpression,
-    # CppFunction,
-    # CppGenericFunction,
-    # CppMultiMeshFunction,
-]
+Coefficient = Union[Constant, Expression, Function, MultiMeshFunction]
 
 
 def validate_coefficient(coefficient: Coefficient) -> bool:
@@ -42,23 +24,8 @@ def validate_coefficient(coefficient: Coefficient) -> bool:
     if issubclass(coefficient.__class__, Function):
         return True
 
-    # if issubclass(coefficient.__class__, MultiMeshFunction):
-    #     return True
-    #
-    # if issubclass(coefficient.__class__, CppConstant):
-    #     return True
-    #
-    # if issubclass(coefficient.__class__, CppExpression):
-    #     return True
-    #
-    # if issubclass(coefficient.__class__, CppFunction):
-    #     return True
-    #
-    # if issubclass(coefficient.__class__, CppGenericFunction):
-    #     return True
-    #
-    # if issubclass(coefficient.__class__, CppMultiMeshFunction):
-    #     return True
+    if issubclass(coefficient.__class__, MultiMeshFunction):
+        return True
 
     return False
 
