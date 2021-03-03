@@ -139,8 +139,12 @@ def eafe_assemble(
     spatial_dim: int = mesh.topology().dim()
     cell_vertex_count: int = spatial_dim + 1
 
-    edge_advection = define_edge_advection(spatial_dim, diffusion, convection)
-    lumped_reaction = define_mass_lumping(cell_vertex_count, reaction)
+    try:
+        edge_advection = define_edge_advection(spatial_dim, diffusion, convection)
+        lumped_reaction = define_mass_lumping(cell_vertex_count, reaction)
+    except Exception as e:
+        parameters["form_compiler"]["quadrature_degree"] = quadrature_degree
+        raise e
 
     V = FunctionSpace(mesh, "Lagrange", 1)
     u = TrialFunction(V)
