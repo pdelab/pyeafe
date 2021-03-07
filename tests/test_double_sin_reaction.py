@@ -12,7 +12,6 @@ from dolfin import (
     errornorm,
 )
 
-import numpy as np
 import pyeafe
 
 
@@ -21,18 +20,11 @@ def test_double_sin_reaction_problem():
         return on_boundary
 
     diffusivity = 1.0e-2
+    reactivity = 3.0
 
-    def diffusion_expression(x):
-        return diffusivity
-
-    def convection_expression(x):
-        return np.array([x[1], -x[0]])
-
-    reaction = 3.0
-
-    def reaction_expression(x):
-        return reaction
-
+    diffusion = Expression("diffusivity", degree=0, diffusivity=diffusivity)
+    convection = Expression(("x[1]", "-x[0]"), degree=1)
+    reaction = Expression("reactivity", degree=0, reactivity=reactivity)
     exact_solution = Expression(
         "sin(2 * DOLFIN_PI * x[0]) * cos(2 * DOLFIN_PI * x[1])", degree=4
     )
@@ -44,11 +36,11 @@ def test_double_sin_reaction_problem():
         * cos(2 * DOLFIN_PI * x[1])\
         - 2 * DOLFIN_PI * x[0] * sin(2 * DOLFIN_PI * x[0])\
         * sin(2 * DOLFIN_PI * x[1])\
-        + reaction * sin(2 * DOLFIN_PI * x[0])\
+        + reactivity * sin(2 * DOLFIN_PI * x[0])\
         * cos(2 * DOLFIN_PI * x[1])",
         degree=2,
         diffusivity=diffusivity,
-        reaction=reaction,
+        reactivity=reactivity,
     )
 
     granularity = 8
@@ -58,9 +50,7 @@ def test_double_sin_reaction_problem():
     test_function = TestFunction(continuous_pw_linear_space)
     linear_functional = right_side_expression * test_function * dx
 
-    stiffness_matrix = pyeafe.eafe_assemble(
-        mesh, diffusion_expression, convection_expression, reaction_expression
-    )
+    stiffness_matrix = pyeafe.eafe_assemble(mesh, diffusion, convection, reaction)
     rhs_vector = assemble(linear_functional)
 
     bc = DirichletBC(continuous_pw_linear_space, exact_solution, boundary)
