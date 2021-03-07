@@ -1,11 +1,12 @@
 from setuptools import setup
+from pyeafe import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
     name="pyeafe",
-    version="0.1.1",
+    version=__version__,
     description="Edge-Averaged Finite Elements (EAFE) for FENiCS",
     url="https://thepnpsolver.github.io",
     author="The PNP Solver",
