@@ -18,6 +18,12 @@ def eafe_assemble(
   reac: Optional[dolfin.Expression] = None,
 ) -> dolfin.Matrix:
 ```
+which correspond to
+$$-\nabla\cdot(\alpha(x)\nabla(u) + \beta(x) * u) + R(x)u = f(x)$$
+* $\alpha(x)$ is the diffusion term
+* $\beta(x)$ is the diffusion term
+* $R(x)$ is the reaction term
+
 
 ## EAFE
 
