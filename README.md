@@ -18,6 +18,14 @@ def eafe_assemble(
   reac: Optional[dolfin.Expression] = None,
 ) -> dolfin.Matrix:
 ```
+which corresponds to
+
+&nabla; &sdot; ( &alpha;(x)&nabla;u + &beta;(x)u)+&gamma;(x)=f(x)
+
+* &alpha;(x) is the diffusion term
+* &beta;(x) is the convection term
+* &gamma;(x) is the reaction term
+
 
 ## EAFE
 
