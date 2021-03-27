@@ -61,22 +61,13 @@ def define_edge_advection(
         return edge_harmonic
 
     convection_with_edge_eval = ensure_cell_eval(convection, dim)
-    if dim > 1:
-        conv_rank: int = convection.value_rank()
-        if conv_rank != 1:
-            raise ValueError("Invalid convection parameter: value_rank must be 1")
-
-        if convection.value_dimension(0) != dim:
-            raise ValueError(
-                "Invalid convection parameter: value_dimension(0) must match mesh spatial dimension"  # noqa E501
-            )
 
     def edge_psi(start, edge, cell):
         midpt = start + 0.5 * edge
         diff = diffusion_with_edge_eval(midpt, cell)
         conv = convection_with_edge_eval(midpt, cell)
         midpt_approx = np.inner(conv, edge)
-        return diff * bernoulli(-midpt_approx / diff)
+        return diff * bernoulli(float(-midpt_approx / diff))
 
     return edge_psi
 

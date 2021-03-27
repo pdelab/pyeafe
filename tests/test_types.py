@@ -12,9 +12,38 @@ from dolfin import (
 
 
 MESH = UnitSquareMesh(4, 4)
+CG = FunctionSpace(MESH, "CG", 1)
+BDM = FunctionSpace(MESH, "BDM", 1)
 DIFFUSION = Expression("1. + x[0] * x[0]", degree=2)
 CONVECTION = Expression(("-x[1]", "x[0]"), degree=1)
 REACTION = Expression("x[0] * x[0]", degree=2)
+
+VALID_DIFFUSIONS = [
+    Constant(1.0),
+    DIFFUSION,
+    interpolate(DIFFUSION, CG),
+]
+
+VALID_CONVECTIONS = [
+    None,
+    Constant((1.0, -1.0)),
+    CONVECTION,
+    interpolate(CONVECTION, BDM),
+]
+
+VALID_REACTIONS = [
+    None,
+    Constant(1.0),
+    REACTION,
+    interpolate(REACTION, CG),
+]
+
+
+def test_assemble_with_mixed_types():
+    for diffusion in VALID_DIFFUSIONS:
+        for convection in VALID_CONVECTIONS:
+            for reaction in VALID_REACTIONS:
+                eafe_assemble(MESH, diffusion, convection, reaction)
 
 
 def test_assemble_raises_for_invalid_mesh():
@@ -47,24 +76,3 @@ def test_assemble_raises_for_invalid_reaction():
 
     with pytest.raises(TypeError):
         eafe_assemble(MESH, DIFFUSION, reaction=5.0)
-
-
-def test_handles_contants():
-    eafe_assemble(MESH, Constant(1.0))
-
-
-def test_handles_expressions():
-    eafe_assemble(MESH, Expression("diff", degree=0, diff=1.0))
-
-
-def test_handles_functions():
-    cg = FunctionSpace(MESH, "CG", 1)
-    bdm = FunctionSpace(MESH, "BDM", 1)
-    diffusion = interpolate(DIFFUSION, cg)
-    convection = interpolate(CONVECTION, bdm)
-
-    eafe_assemble(MESH, diffusion, convection)
-
-
-def test_handles_multi_mesh_functions():
-    pass
