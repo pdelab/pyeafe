@@ -10,6 +10,7 @@ from dolfin import (
     interpolate,
 )
 
+from tests.utils.types import assemble_with_mixed_types
 
 MESH = UnitSquareMesh(4, 4)
 CG = FunctionSpace(MESH, "CG", 1)
@@ -40,10 +41,17 @@ VALID_REACTIONS = [
 
 
 def test_assemble_with_mixed_types():
-    for diffusion in VALID_DIFFUSIONS:
-        for convection in VALID_CONVECTIONS:
-            for reaction in VALID_REACTIONS:
-                eafe_assemble(MESH, diffusion, convection, reaction)
+    assemble_with_mixed_types(
+        MESH,
+        VALID_DIFFUSIONS,
+        VALID_CONVECTIONS,
+        VALID_REACTIONS,
+    )
+
+    # for diffusion in VALID_DIFFUSIONS:
+    #     for convection in VALID_CONVECTIONS:
+    #         for reaction in VALID_REACTIONS:
+    #             eafe_assemble(MESH, diffusion, convection, reaction)
 
 
 def test_assemble_raises_for_invalid_mesh():
