@@ -21,8 +21,8 @@ def assert_solves(
     reaction: Optional[Coefficient],
     source: Coefficient,
     exact: Coefficient,
-    l2_tol: Optional[float] = 2.0e-1,
-    h1_tol: Optional[float] = 2.0e-1,
+    l2_tol: Optional[float] = 1.0e-8,
+    h1_tol: Optional[float] = 1.0e-6,
 ):
     eafe_matrix = eafe_assemble(mesh, diffusion, convection, reaction)
 
