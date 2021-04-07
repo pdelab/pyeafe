@@ -40,7 +40,7 @@ run:
 Code smells and linting automatically takes place in the pre-commit hook;
 however, these operations can always be executed manually with:
 ```
-  flake8 && black .
+  black . && flake8
 ```
 
 
