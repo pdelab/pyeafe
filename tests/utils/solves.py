@@ -30,7 +30,7 @@ def assert_solves(
     test_function = TestFunction(pw_linears)
     rhs_vector = assemble(source * test_function * dx)
 
-    bc = DirichletBC(pw_linears, exact, lambda _, on_bdnry: on_bdnry)
+    bc = DirichletBC(pw_linears, exact, lambda _, on_bndry: on_bndry)
     bc.apply(eafe_matrix, rhs_vector)
 
     solution = Function(pw_linears)
