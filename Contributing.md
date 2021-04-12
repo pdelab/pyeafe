@@ -58,7 +58,7 @@ update the package version in `pyeafe/__init__.py` following
 [semantic versioning standards](https://semver.org/).
 Tests and code smells should be run before bundling for release:
 ```
-  python setup.py test && python setup.py sdist
+  python setup.py test && python setup.py sdist bdist_wheel
 ```
 
 If all goes well, push to the git remote and merge into the `master` branch.
