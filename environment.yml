@@ -16,3 +16,5 @@ dependencies:
   - pre-commit=2.10.0
   - pytest=6.2.2
   - twine=3.2.0
+  - rfc3986=1.4.0
+  - keyring=22.3.0
