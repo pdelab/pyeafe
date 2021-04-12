@@ -17,6 +17,7 @@ setup(
     install_requires=["numpy>=1.19.0", "petsc4py>=3.12.0", "typing>=3.7.4.3"],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    tests_require=["pytest", "flake8", "black"],
+    setup_requires=["pytest-runner", "flake8"],
+    tests_require=["pytest"],
     project_urls={"Source Code": "https://github.com/thepnpsolver/pyeafe"},
 )

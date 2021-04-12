@@ -52,6 +52,22 @@ Ensure that all tests pass before pushing to remote.
 Failing tests prevent pull requests from being reviewed and merged.
 
 
+## Releasing
+Before building a release,
+update the package version in `pyeafe/__init__.py` following
+[semantic versioning standards](https://semver.org/).
+Tests and code smells should be run before bundling for release:
+```
+  python setup.py test && python setup.py sdist
+```
+
+If all goes well, push to the git remote and merge into the `master` branch.
+Create a release on GitHub with the matching version, and upload to pypi:
+```
+  twine upload dist/*
+```
+
+
 ## Uninstalling
 To uninstall, simply remove the `pyeafe` virtual environment with
 `conda env remove -n pyeafe`.
